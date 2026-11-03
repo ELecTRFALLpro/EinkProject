@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"eink-server/internal/config"
 	"eink-server/internal/handler"
@@ -87,6 +88,21 @@ func main() {
 	// 6. 配置 Gin 路由
 	r := gin.Default()
 	r.Use(middleware.CORS())
+
+	// 静态文件与前端托管 (支持从项目根目录或 server 目录运行)
+	frontendDir := "./frontend"
+	if _, err := os.Stat(frontendDir); os.IsNotExist(err) {
+		frontendDir = "../frontend"
+	}
+	if _, err := os.Stat(frontendDir); err == nil {
+		r.Static("/css", frontendDir+"/css")
+		r.Static("/js", frontendDir+"/js")
+		r.Static("/presets", frontendDir+"/presets")
+		r.Static("/assets", frontendDir+"/assets")
+		r.StaticFile("/", frontendDir+"/index.html")
+		r.StaticFile("/index.html", frontendDir+"/index.html")
+		log.Printf("Frontend static SPA served from: %s", frontendDir)
+	}
 
 	// 基础健康检查
 	r.GET("/health", func(c *gin.Context) {

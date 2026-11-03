@@ -111,6 +111,7 @@ type FilterPreset struct {
 	Description string    `gorm:"size:255" json:"description"`
 	Tag         string    `gorm:"size:32" json:"tag"` // 推荐标签: "HOT", "PRO", "VINTAGE"
 	CoverColor  string    `gorm:"size:32" json:"cover_color"`
+	CubeFile    string    `gorm:"size:128" json:"cube_file"`
 	ParamsJSON  string    `gorm:"type:text" json:"params"` // contrast, saturation, red_damper, etc.
 	IsActive    bool      `gorm:"default:true" json:"is_active"`
 	SortOrder   int       `gorm:"default:0" json:"sort_order"`
