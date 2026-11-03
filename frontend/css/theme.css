@@ -1,5 +1,5 @@
 /**
- * Spotify Dark Design System for EinkProject
+ * Spotify Dark Design System for EinkProject (iOS Mobile-First)
  * Base Tokens, Typography, Geometry, and Hardware Color Gamut
  */
 
@@ -11,7 +11,7 @@
   --color-bg-surface: #181818;
   --color-bg-elevated: #242424;
   --color-bg-card-hover: #282828;
-  --color-bg-overlay: rgba(0, 0, 0, 0.78);
+  --color-bg-overlay: rgba(0, 0, 0, 0.82);
 
   /* Spotify Green Accent */
   --color-accent-primary: #1ED760;
@@ -36,21 +36,27 @@
   --color-eink-yellow: #F4C430;
   --color-eink-red: #D8262C;
 
+  /* iOS Safe Areas */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+
   /* Geometry & Radii */
   --radius-pill: 9999px;
-  --radius-card: 12px;
-  --radius-inner: 8px;
-  --radius-modal: 20px;
+  --radius-card: 14px;
+  --radius-inner: 10px;
+  --radius-modal: 24px;
   --radius-bezel: 16px;
 
   /* Shadows */
-  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.5);
-  --shadow-card-hover: 0 16px 36px rgba(0, 0, 0, 0.75);
-  --shadow-accent-glow: 0 0 24px var(--color-accent-glow);
-  --shadow-bezel: 0 24px 60px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover: 0 8px 30px rgba(0, 0, 0, 0.7);
+  --shadow-accent-glow: 0 0 20px var(--color-accent-glow);
+  --shadow-bezel: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
 
   /* Font Families */
-  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
   --font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, monospace;
 }
 
@@ -58,6 +64,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html, body {
@@ -67,29 +74,21 @@ html, body {
   color: var(--color-text-primary);
   font-family: var(--font-main);
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.4;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 }
 
-/* Custom Minimalist Spotify Scrollbars */
+/* Scrollbars */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: var(--radius-pill);
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.35);
+  display: none;
 }
 
-/* Pill Buttons */
+/* iOS Spring Buttons */
 .pill-btn {
   display: inline-flex;
   align-items: center;
@@ -101,34 +100,30 @@ html, body {
   border-radius: var(--radius-pill);
   border: none;
   cursor: pointer;
-  padding: 10px 22px;
-  transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1),
-              background-color 0.2s ease,
-              box-shadow 0.2s ease,
-              color 0.2s ease;
+  min-height: 44px; /* iOS Human Interface Minimum 44pt */
+  padding: 10px 20px;
+  transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1),
+              background-color 0.15s ease,
+              box-shadow 0.15s ease,
+              opacity 0.12s ease;
   user-select: none;
   white-space: nowrap;
   outline: none;
-  text-decoration: none;
-}
-
-.pill-btn:hover {
-  transform: scale(1.03);
 }
 
 .pill-btn:active {
-  transform: scale(0.97);
+  transform: scale(0.95);
+  opacity: 0.9;
 }
 
 .pill-btn-primary {
   background-color: var(--color-accent-primary);
   color: var(--color-text-on-accent);
-  box-shadow: 0 4px 16px rgba(30, 215, 96, 0.25);
+  box-shadow: 0 4px 16px rgba(30, 215, 96, 0.3);
 }
 
-.pill-btn-primary:hover {
-  background-color: var(--color-accent-hover);
-  box-shadow: var(--shadow-accent-glow);
+.pill-btn-primary:active {
+  background-color: var(--color-accent-pressed);
 }
 
 .pill-btn-secondary {
@@ -136,40 +131,43 @@ html, body {
   color: #000000;
 }
 
-.pill-btn-secondary:hover {
-  background-color: #F0F0F0;
-}
-
 .pill-btn-ghost {
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: rgba(255, 255, 255, 0.08);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border-subtle);
 }
 
-.pill-btn-ghost:hover {
-  background-color: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.25);
+.pill-btn-ghost:active {
+  background-color: rgba(255, 255, 255, 0.16);
 }
 
 .pill-btn-ghost.active {
-  background-color: rgba(30, 215, 96, 0.15);
+  background-color: rgba(30, 215, 96, 0.16);
   color: var(--color-accent-primary);
   border-color: var(--color-accent-primary);
+}
+
+.pill-btn-icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border-radius: 50%;
 }
 
 .pill-btn.full-width {
   width: 100%;
 }
 
-/* Badge Tags */
+/* Badges */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   padding: 3px 8px;
   border-radius: var(--radius-pill);
 }
@@ -177,7 +175,7 @@ html, body {
 .badge-green {
   background-color: rgba(30, 215, 96, 0.18);
   color: var(--color-accent-primary);
-  border: 1px solid rgba(30, 215, 96, 0.3);
+  border: 1px solid rgba(30, 215, 96, 0.35);
 }
 
 .badge-film {
@@ -186,9 +184,9 @@ html, body {
 }
 
 .badge-polaroid {
-  background-color: rgba(244, 196, 48, 0.18);
+  background-color: rgba(244, 196, 48, 0.2);
   color: #F4C430;
-  border: 1px solid rgba(244, 196, 48, 0.3);
+  border: 1px solid rgba(244, 196, 48, 0.35);
 }
 
 .badge-fuji {
@@ -197,7 +195,7 @@ html, body {
 }
 
 .badge-kodak {
-  background-color: rgba(255, 152, 0, 0.2);
+  background-color: rgba(255, 152, 0, 0.25);
   color: #FFB74D;
 }
 

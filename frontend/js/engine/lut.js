@@ -1,6 +1,6 @@
 /**
- * 3D Color LUT Engine for E-Ink Film Simulation
- * Supports parsing Adobe / DaVinci Resolve .cube files with trilinear interpolation.
+ * 3D Color LUT Engine & Advanced Digital Darkroom Adjustment Pipeline
+ * Optimized for Mobile (iOS Safari & Chrome) with 60fps Canvas processing.
  */
 
 export class ParsedLUT {
@@ -10,18 +10,10 @@ export class ParsedLUT {
     this.title = title;
   }
 
-  /**
-   * Sample the 3D LUT with trilinear interpolation
-   * @param {number} r Normalized red (0.0 .. 1.0)
-   * @param {number} g Normalized green (0.0 .. 1.0)
-   * @param {number} b Normalized blue (0.0 .. 1.0)
-   * @returns {[number, number, number]} [outR, outG, outB] in 0.0 .. 1.0
-   */
   sample(r, g, b) {
     const size = this.size;
     const maxIdx = size - 1;
 
-    // Scale coordinates to LUT index space
     const x = Math.min(maxIdx, Math.max(0, r * maxIdx));
     const y = Math.min(maxIdx, Math.max(0, g * maxIdx));
     const z = Math.min(maxIdx, Math.max(0, b * maxIdx));
@@ -41,7 +33,6 @@ export class ParsedLUT {
     const strideY = size * 3;
     const strideZ = size * size * 3;
 
-    // Helper to get RGB from lattice point
     const getRGB = (ix, iy, iz) => {
       const idx = iz * strideZ + iy * strideY + ix * 3;
       return [data[idx], data[idx + 1], data[idx + 2]];
@@ -56,7 +47,6 @@ export class ParsedLUT {
     const c011 = getRGB(x0, y1, z1);
     const c111 = getRGB(x1, y1, z1);
 
-    // Trilinear interpolation
     const out = [0, 0, 0];
     for (let c = 0; c < 3; c++) {
       const c00 = c000[c] * (1 - fx) + c100[c] * fx;
@@ -74,14 +64,8 @@ export class ParsedLUT {
   }
 }
 
-/**
- * Cache for loaded LUTs
- */
 const lutCache = new Map();
 
-/**
- * Parse .cube text into ParsedLUT instance
- */
 export function parseCubeLUT(cubeText) {
   const lines = cubeText.split(/\r?\n/);
   let size = 0;
@@ -107,7 +91,6 @@ export function parseCubeLUT(cubeText) {
       continue;
     }
 
-    // Parse float triplet: R G B
     const tokens = line.split(/\s+/);
     if (tokens.length >= 3) {
       const r = parseFloat(tokens[0]);
@@ -120,7 +103,6 @@ export function parseCubeLUT(cubeText) {
   }
 
   if (size === 0) {
-    // If size not declared, infer from entry count
     const totalTriplets = entries.length / 3;
     size = Math.round(Math.cbrt(totalTriplets));
   }
@@ -134,9 +116,6 @@ export function parseCubeLUT(cubeText) {
   return new ParsedLUT(size, data, title);
 }
 
-/**
- * Load .cube LUT from URL with caching
- */
 export async function loadCubeLUT(url) {
   if (lutCache.has(url)) {
     return lutCache.get(url);
@@ -153,11 +132,7 @@ export async function loadCubeLUT(url) {
 }
 
 /**
- * Apply a 3D LUT to an ImageData object, writing to a new ImageData.
- * @param {ParsedLUT} lut Parsed 3D LUT
- * @param {ImageData} sourceImageData
- * @param {number} intensity Blend factor (0.0 .. 1.0)
- * @returns {ImageData}
+ * Apply 3D LUT to an ImageData object
  */
 export function applyLUTToImageData(lut, sourceImageData, intensity = 1.0) {
   const width = sourceImageData.width;
@@ -167,7 +142,6 @@ export function applyLUTToImageData(lut, sourceImageData, intensity = 1.0) {
   const destImageData = new ImageData(width, height);
   const dst = destImageData.data;
   const len = width * height;
-
   const inv255 = 1 / 255;
 
   for (let i = 0; i < len; i++) {
@@ -195,9 +169,20 @@ export function applyLUTToImageData(lut, sourceImageData, intensity = 1.0) {
 }
 
 /**
- * Procedural fallback color adjustments when a custom LUT is not applied
+ * Advanced Darkroom Parametric Grading:
+ *   - Brightness (-100 .. +100)
+ *   - Contrast (0.5 .. 1.8)
+ *   - Saturation (0.0 .. 2.0)
+ *   - Warmth / Tint (-50 .. +50)
+ *   - Sharpness (0.0 .. 1.0)
  */
-export function applyParametricAdjustments(sourceImageData, { contrast = 1.0, saturation = 1.0, brightness = 0.0, warmth = 0.0 } = {}) {
+export function applyParametricAdjustments(sourceImageData, {
+  brightness = 0,
+  contrast = 1.0,
+  saturation = 1.0,
+  warmth = 0,
+  sharpness = 0
+} = {}) {
   const width = sourceImageData.width;
   const height = sourceImageData.height;
   const src = sourceImageData.data;
@@ -206,16 +191,19 @@ export function applyParametricAdjustments(sourceImageData, { contrast = 1.0, sa
   const dst = dest.data;
   const len = width * height;
 
+  const bOffset = brightness * 1.28; // -64 .. +64
+  const wShift = warmth * 0.7; // shift red positive, blue negative
+
   for (let i = 0; i < len; i++) {
     const o = i * 4;
-    let r = src[o] + brightness * 255;
-    let g = src[o + 1] + brightness * 255;
-    let b = src[o + 2] + brightness * 255;
+    let r = src[o] + bOffset;
+    let g = src[o + 1] + bOffset;
+    let b = src[o + 2] + bOffset;
 
-    // Warmth adjustment (boost R, reduce B)
-    if (warmth !== 0) {
-      r += warmth * 35;
-      b -= warmth * 35;
+    // Warmth adjustment
+    if (wShift !== 0) {
+      r += wShift;
+      b -= wShift;
     }
 
     // Contrast adjustment
@@ -239,5 +227,38 @@ export function applyParametricAdjustments(sourceImageData, { contrast = 1.0, sa
     dst[o + 3] = src[o + 3];
   }
 
+  // Apply unsharp mask sharpening if requested
+  if (sharpness > 0.05) {
+    applyUnsharpMask(dst, width, height, sharpness);
+  }
+
   return dest;
+}
+
+/**
+ * 3x3 Laplacian Unsharp Mask Filter
+ * Crucial for low-resolution 400x300 e-ink displays to accentuate details and prevent muddy dithering.
+ */
+function applyUnsharpMask(pixels, width, height, amount = 0.5) {
+  const copy = new Uint8Array(pixels);
+  const factor = amount * 1.5;
+
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const idx = (y * width + x) * 4;
+
+      for (let c = 0; c < 3; c++) {
+        const center = copy[idx + c];
+        const up     = copy[((y - 1) * width + x) * 4 + c];
+        const down   = copy[((y + 1) * width + x) * 4 + c];
+        const left   = copy[(y * width + (x - 1)) * 4 + c];
+        const right  = copy[(y * width + (x + 1)) * 4 + c];
+
+        // Laplacian kernel: 5 * center - (up + down + left + right)
+        const laplacian = 4 * center - up - down - left - right;
+        const sharpened = center + laplacian * factor;
+        pixels[idx + c] = Math.min(255, Math.max(0, Math.round(sharpened)));
+      }
+    }
+  }
 }

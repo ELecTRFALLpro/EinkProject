@@ -1,245 +1,128 @@
 /**
- * Application Layout & Component Styles
- * Spotify-Inspired Darkroom Studio for E-Ink NFC Photo Frame
+ * iOS Mobile App Experience for E-Ink Photo Frame
+ * Darkroom Studio, Gesture Transform, Touch Sliders & NFC Dock
  */
 
-/* Shell Container */
-.app-layout {
+/* 1. App Shell */
+.ios-app-container {
   display: flex;
+  flex-direction: column;
   width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+  height: 100dvh;
+  max-width: 480px; /* Centered on desktop, full-width on mobile */
+  margin: 0 auto;
   background-color: var(--color-bg-base);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
 }
 
-/* 1. Left Sidebar Navigation (Spotify Desktop Style) */
-.sidebar {
-  width: 250px;
-  background-color: #000000;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  border-right: 1px solid var(--color-border-subtle);
-  padding: 24px 16px;
-  user-select: none;
+@media (min-width: 481px) {
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 20%, #1e1e1e 0%, #0a0a0a 100%);
+  }
+  .ios-app-container {
+    height: 94dvh;
+    border-radius: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.12);
+  }
 }
 
-.brand-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 8px 24px 8px;
-}
-
-.brand-logo-icon {
-  width: 38px;
-  height: 38px;
-  background: linear-gradient(135deg, #1ED760 0%, #15883e 100%);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(30, 215, 96, 0.3);
-}
-
-.brand-title-group h1 {
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--color-text-primary);
-}
-
-.brand-subtitle {
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  font-weight: 500;
-}
-
-.nav-menu {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 12px;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
-  color: var(--color-text-secondary);
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: var(--radius-inner);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.nav-item:hover {
-  color: var(--color-text-primary);
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.nav-item.active {
-  color: var(--color-accent-primary);
-  background-color: rgba(30, 215, 96, 0.1);
-}
-
-.sidebar-spacer {
-  flex: 1;
-}
-
-.device-card-mini {
-  background: var(--color-bg-surface);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-card);
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.device-card-header {
+/* 2. iOS Top Navigation Bar */
+.ios-nav-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: calc(var(--sat) + 8px) 16px 10px 16px;
+  background: rgba(18, 18, 18, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--color-border-subtle);
+  z-index: 50;
+  flex-shrink: 0;
 }
 
-.device-indicator {
+.nav-left, .nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ios-icon-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  border-radius: var(--radius-pill);
+  height: 36px;
+  padding: 0 12px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.15s;
+}
+
+.ios-icon-btn:active {
+  transform: scale(0.94);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.device-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(30, 215, 96, 0.12);
+  border: 1px solid rgba(30, 215, 96, 0.25);
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
   color: var(--color-accent-primary);
 }
 
-.device-dot {
-  width: 8px;
-  height: 8px;
-  background-color: var(--color-accent-primary);
+.device-dot-pulse {
+  width: 7px;
+  height: 7px;
+  background: var(--color-accent-primary);
   border-radius: 50%;
   box-shadow: 0 0 8px var(--color-accent-primary);
 }
 
-.device-specs-mini {
-  font-size: 11px;
-  color: var(--color-text-tertiary);
-  font-family: var(--font-mono);
-}
-
-/* 2. Main Content Stage */
-.main-stage {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  position: relative;
-  background: radial-gradient(circle at 50% 10%, #1e1e1e 0%, var(--color-bg-base) 60%);
-}
-
-/* Top App Bar */
-.top-app-bar {
-  height: 64px;
-  padding: 0 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: rgba(18, 18, 18, 0.85);
-  backdrop-filter: blur(20px);
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-
-.sample-selector-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.selector-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  margin-right: 4px;
-}
-
-.chip-btn {
-  background: var(--color-bg-surface);
-  border: 1px solid var(--color-border-subtle);
-  color: var(--color-text-secondary);
-  border-radius: var(--radius-pill);
-  padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.chip-btn:hover {
-  background: var(--color-bg-elevated);
-  color: var(--color-text-primary);
-}
-
-.chip-btn.active {
-  background: rgba(30, 215, 96, 0.15);
-  color: var(--color-accent-primary);
-  border-color: var(--color-accent-primary);
-}
-
-.top-bar-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* Workspace Grid */
-.workspace-grid {
-  display: flex;
-  flex: 1;
-  padding: 24px 32px 140px 32px;
-  gap: 32px;
-}
-
-.canvas-center-stage {
+/* 3. Main Stage: Interactive Frame & Gesture Area */
+.ios-viewport-stage {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 480px;
+  padding: 12px 16px 8px 16px;
+  overflow: hidden;
+  position: relative;
 }
 
-/* E-Ink Hardware Frame Mockup */
-.frame-simulator-root {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  width: 100%;
-}
-
+/* E-Ink Frame Mockup */
 .frame-bezel {
-  background: linear-gradient(145deg, #1e1e1e 0%, #111111 100%);
+  background: linear-gradient(145deg, #1f1f1f 0%, #101010 100%);
   border-radius: var(--radius-bezel);
-  padding: 24px 28px 32px 28px;
+  padding: 14px 16px 20px 16px;
   box-shadow: var(--shadow-bezel);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  position: relative;
-  transition: transform 0.3s ease;
-  max-width: 520px;
   width: 100%;
+  max-width: 375px;
+  position: relative;
+  touch-action: none; /* Allows pointer drag & pinch */
 }
 
 .frame-inner-mat {
   background: #0d0d0d;
-  border-radius: 10px;
-  padding: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.8);
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.9);
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.9);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -247,13 +130,17 @@
 
 .screen-viewport {
   position: relative;
-  width: 400px;
-  height: 300px;
+  width: 100%;
   aspect-ratio: 4 / 3;
   background-color: var(--color-eink-white);
   border-radius: 4px;
   overflow: hidden;
   box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.4);
+  cursor: grab;
+}
+
+.screen-viewport:active {
+  cursor: grabbing;
 }
 
 .eink-canvas, .split-canvas {
@@ -266,7 +153,7 @@
   display: block;
 }
 
-/* Paper Grain Texture (Simulates ambient diffuse e-paper reflectance) */
+/* Paper Grain Texture */
 .paper-grain-overlay {
   position: absolute;
   top: 0;
@@ -282,7 +169,23 @@
   mix-blend-mode: multiply;
 }
 
-/* Electrophoretic Waveform Refresh Animations */
+/* Gesture Pan/Zoom Touch Helper Cue */
+.gesture-hint {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+  opacity: 0.8;
+  transition: opacity 0.3s;
+}
+
+/* Waveform Refresh Animations */
 .refresh-flash-overlay {
   position: absolute;
   top: 0;
@@ -317,8 +220,8 @@
 }
 
 @keyframes noisePulse {
-  0% { transform: scale(1.0) translateY(0); filter: brightness(1.2); }
-  100% { transform: scale(1.01) translateY(-2px); filter: brightness(0.8); }
+  0% { transform: scale(1.0); filter: brightness(1.2); }
+  100% { transform: scale(1.01); filter: brightness(0.8); }
 }
 
 .refresh-flash-overlay.active.phase-3-settling {
@@ -327,7 +230,7 @@
   transition: opacity 0.35s ease;
 }
 
-/* Split Screen Drag Handle */
+/* Split Handle */
 .split-handle {
   position: absolute;
   top: 0;
@@ -352,82 +255,76 @@
 }
 
 .split-knob {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   background: var(--color-accent-primary);
   color: #000;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
   z-index: 11;
 }
 
 .frame-engraving {
-  margin-top: 10px;
+  margin-top: 8px;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.35);
   letter-spacing: 0.12em;
 }
 
-/* Simulator Bottom Toolbar */
-.sim-toolbar {
+/* Quick Transform Control Bar */
+.quick-transform-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
   width: 100%;
-  max-width: 520px;
-  gap: 12px;
 }
 
-.sim-toolbar-group {
-  display: flex;
-  gap: 6px;
-}
-
-/* 3. Right Inspector & Parameter Controls */
-.inspector-panel {
-  width: 360px;
-  background: var(--color-bg-surface);
+.transform-chip {
+  background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-card);
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  flex-shrink: 0;
-  box-shadow: var(--shadow-card);
-}
-
-.inspector-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.section-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.segmented-control {
-  display: flex;
-  background: #000000;
-  padding: 4px;
+  color: var(--color-text-secondary);
   border-radius: var(--radius-pill);
-  border: 1px solid var(--color-border-subtle);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.12s;
 }
 
-.segmented-btn {
+.transform-chip:active {
+  transform: scale(0.93);
+  background: rgba(255, 255, 255, 0.16);
+  color: #FFFFFF;
+}
+
+.transform-chip.active {
+  background: rgba(30, 215, 96, 0.15);
+  color: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+}
+
+/* 4. iOS Segmented Tab Navigation */
+.ios-segmented-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  margin: 4px 16px 8px 16px;
+  border: 1px solid var(--color-border-subtle);
+  flex-shrink: 0;
+}
+
+.tab-btn {
   flex: 1;
   background: transparent;
   border: none;
@@ -435,174 +332,81 @@
   font-family: var(--font-main);
   font-size: 13px;
   font-weight: 600;
-  padding: 8px 12px;
+  padding: 8px 4px;
   border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: all 0.2s;
   text-align: center;
+  transition: all 0.15s ease;
 }
 
-.segmented-btn.active {
-  background: var(--color-bg-elevated);
+.tab-btn.active {
+  background: #242424;
   color: var(--color-text-primary);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-/* Slider Controls */
-.slider-control-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.slider-label-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  color: var(--color-text-secondary);
-}
-
-.slider-val {
-  font-family: var(--font-mono);
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-input[type="range"] {
-  -webkit-appearance: none;
-  width: 100%;
-  height: 4px;
-  background: #3e3e3e;
-  border-radius: 2px;
-  outline: none;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  background: #FFFFFF;
-  border-radius: 50%;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-  transition: transform 0.1s, background-color 0.1s;
-}
-
-input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-  background: var(--color-accent-primary);
-}
-
-/* Palette Distribution Histogram */
-.histogram-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-
-.histogram-cell {
-  background: #000000;
-  border-radius: var(--radius-inner);
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid var(--color-border-subtle);
-}
-
-.hist-swatch {
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
-  border: 1px solid rgba(255,255,255,0.2);
-}
-
-.hist-label {
-  font-size: 10px;
-  color: var(--color-text-tertiary);
-}
-
-.hist-pct {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-}
-
-/* 4. Film Preset Shelf (Fixed Bottom Drawer, Spotify Carousel Style) */
-.film-shelf-dock {
-  position: fixed;
-  bottom: 0;
-  left: 250px;
-  right: 0;
-  background: rgba(18, 18, 18, 0.95);
-  backdrop-filter: blur(24px);
+/* 5. Tab Content Drawer */
+.tab-drawer-wrapper {
+  background: #161616;
   border-top: 1px solid var(--color-border-subtle);
-  padding: 16px 32px;
+  border-top-left-radius: var(--radius-modal);
+  border-top-right-radius: var(--radius-modal);
+  padding: 14px 16px 10px 16px;
+  height: 220px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  z-index: 40;
 }
 
-.shelf-header {
+/* Tab 1: Film Presets Shelf */
+.film-shelf-scroll {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.shelf-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.film-cards-scroll-container {
-  display: flex;
-  gap: 14px;
+  gap: 12px;
   overflow-x: auto;
-  padding-bottom: 6px;
-  scroll-behavior: smooth;
+  padding: 4px 0 10px 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .film-card {
-  width: 140px;
+  width: 124px;
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border-subtle);
-  border-radius: 10px;
-  padding: 10px;
+  border-radius: 12px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
   flex-shrink: 0;
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  transition: transform 0.15s, border-color 0.15s;
   position: relative;
 }
 
-.film-card:hover {
-  background: var(--color-bg-elevated);
-  transform: translateY(-3px);
-  border-color: rgba(255, 255, 255, 0.2);
+.film-card:active {
+  transform: scale(0.96);
 }
 
 .film-card.active {
   border: 2px solid var(--color-accent-primary);
   background: #202020;
-  box-shadow: 0 4px 16px rgba(30, 215, 96, 0.2);
+  box-shadow: 0 4px 16px rgba(30, 215, 96, 0.25);
 }
 
 .film-card-thumb {
   width: 100%;
-  height: 75px;
+  height: 68px;
   border-radius: 6px;
   overflow: hidden;
   background: #000;
-  position: relative;
 }
 
 .film-card-thumb img {
@@ -618,7 +422,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 .film-card-name {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--color-text-primary);
   white-space: nowrap;
@@ -628,61 +432,198 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 .film-card-tag {
   align-self: flex-start;
-  margin-top: 2px;
 }
 
 .film-card-active-check {
   position: absolute;
   top: 6px;
   right: 6px;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   background: var(--color-accent-primary);
   color: #000;
   border-radius: 50%;
   display: none;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
 }
 
 .film-card.active .film-card-active-check {
   display: flex;
 }
 
-/* 5. Native <dialog> Modal (NFC Flash) */
+/* Tab 2: Darkroom Sliders */
+.sliders-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.slider-unit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slider-header-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.slider-val-num {
+  font-family: var(--font-mono);
+  color: var(--color-text-primary);
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: #333333;
+  border-radius: 3px;
+  outline: none;
+  margin: 6px 0;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px; /* Large touch target for iOS thumb */
+  height: 22px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+  background: var(--color-accent-primary);
+}
+
+.tone-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+/* Tab 3: Framing & Histogram */
+.framing-row {
+  display: flex;
+  gap: 8px;
+}
+
+.framing-btn {
+  flex: 1;
+  background: #242424;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-inner);
+  padding: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+.framing-btn.active {
+  background: rgba(30, 215, 96, 0.15);
+  color: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+}
+
+.histogram-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.hist-chip {
+  background: #111111;
+  border-radius: var(--radius-inner);
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.hist-swatch-sm {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.hist-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* 6. Sticky iOS Bottom Action Dock */
+.ios-bottom-dock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px calc(var(--sab) + 12px) 16px;
+  background: #111111;
+  border-top: 1px solid var(--color-border-subtle);
+  flex-shrink: 0;
+  z-index: 45;
+}
+
+.btn-refresh-wave {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-subtle);
+  min-width: 90px;
+}
+
+.btn-nfc-main {
+  flex: 1;
+  height: 48px;
+  font-size: 15px;
+}
+
+/* 7. NFC Flash Modal (Native <dialog>) */
 dialog#nfcModal {
   margin: auto;
   border: 1px solid var(--color-border-focus);
-  background: #181818;
+  background: #1a1a1a;
   border-radius: var(--radius-modal);
   padding: 0;
   color: var(--color-text-primary);
-  max-width: 480px;
-  width: 90vw;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+  max-width: 400px;
+  width: 92vw;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9);
   outline: none;
 }
 
 dialog#nfcModal::backdrop {
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(16px);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .nfc-modal-content {
-  padding: 32px;
+  padding: 24px 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   position: relative;
 }
 
 .modal-close-btn {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 16px;
+  right: 16px;
   background: rgba(255, 255, 255, 0.1);
   border: none;
   color: var(--color-text-primary);
@@ -693,11 +634,7 @@ dialog#nfcModal::backdrop {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-}
-
-.modal-close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  font-size: 13px;
 }
 
 .nfc-modal-header {
@@ -705,11 +642,11 @@ dialog#nfcModal::backdrop {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .nfc-pulse-svg {
-  filter: drop-shadow(0 0 12px var(--color-accent-glow));
+  filter: drop-shadow(0 0 10px var(--color-accent-glow));
 }
 
 .pulse-center {
@@ -734,13 +671,13 @@ dialog#nfcModal::backdrop {
 }
 
 .nfc-title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: -0.01em;
 }
 
 .nfc-subtitle {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-secondary);
 }
 
@@ -748,17 +685,17 @@ dialog#nfcModal::backdrop {
   background: #101010;
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-inner);
-  padding: 14px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  font-size: 12px;
 }
 
 .telemetry-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12px;
 }
 
 .telemetry-label {
@@ -773,7 +710,7 @@ dialog#nfcModal::backdrop {
 .nfc-progress-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .nfc-progress-bar {
@@ -794,7 +731,7 @@ dialog#nfcModal::backdrop {
 .nfc-progress-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--color-text-secondary);
 }
@@ -803,15 +740,15 @@ dialog#nfcModal::backdrop {
   background: rgba(30, 215, 96, 0.12);
   border: 1px solid rgba(30, 215, 96, 0.3);
   border-radius: var(--radius-inner);
-  padding: 12px;
+  padding: 10px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .success-icon {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   background: var(--color-accent-primary);
   color: #000;
   border-radius: 50%;
@@ -820,43 +757,78 @@ dialog#nfcModal::backdrop {
   justify-content: center;
   font-weight: 900;
   flex-shrink: 0;
+  font-size: 12px;
 }
 
 .success-text {
   display: flex;
   flex-direction: column;
-  font-size: 12px;
+  font-size: 11px;
   gap: 2px;
 }
 
-.modal-secondary-actions {
+.modal-actions-row {
   display: flex;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
-.modal-secondary-actions .pill-btn {
+.modal-actions-row .pill-btn {
   flex: 1;
 }
 
-/* Mobile Responsive */
-@media (max-width: 900px) {
-  .app-layout {
-    flex-direction: column;
-  }
-  .sidebar {
-    display: none;
-  }
-  .workspace-grid {
-    flex-direction: column;
-    padding: 16px;
-    gap: 20px;
-  }
-  .film-shelf-dock {
-    left: 0;
-    padding: 12px 16px;
-  }
-  .inspector-panel {
-    width: 100%;
-  }
+/* Sample Chooser Action Sheet */
+dialog#sampleSheet {
+  margin: auto auto 0 auto;
+  border: none;
+  background: #1e1e1e;
+  border-top-left-radius: var(--radius-modal);
+  border-top-right-radius: var(--radius-modal);
+  padding: 20px 16px calc(var(--sab) + 16px) 16px;
+  color: var(--color-text-primary);
+  width: 100vw;
+  max-width: 480px;
+  outline: none;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
+}
+
+dialog#sampleSheet::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(12px);
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  margin: 0 auto 16px auto;
+}
+
+.sheet-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.sheet-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sheet-item {
+  background: #282828;
+  border-radius: var(--radius-inner);
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sheet-item:active {
+  background: #333333;
 }

@@ -1,14 +1,14 @@
 /**
- * EinkProject Web Darkroom & E-Ink Simulator
- * Spotify Dark Aesthetic Frontend Controller
+ * EinkProject iOS Darkroom App Controller
+ * Spotify Dark Theme · Touch Gestures · 3D LUTs · E-Ink Dithering
  */
 
 import { FrameSimulator } from './components/frame_simulator.js';
 import { NFCModal } from './components/nfc_modal.js';
 import { ditherAtkinson, ditherFloydSteinberg } from './engine/dither.js';
-import { pack2BitMSB, downloadBinaryFile, downloadCanvasAsPNG } from './engine/packer.js';
+import { pack2BitMSB, downloadBinaryFile } from './engine/packer.js';
 import { loadCubeLUT, applyLUTToImageData, applyParametricAdjustments } from './engine/lut.js';
-import { fetchFilters, fetchConfig, recordFlashTelemetry } from './api.js';
+import { fetchFilters, recordFlashTelemetry } from './api.js';
 
 class EinkApp {
   constructor() {
@@ -17,10 +17,23 @@ class EinkApp {
       currentImage: null,
       selectedPreset: null,
       ditherAlgorithm: 'atkinson',
-      redDamper: 1.15,
-      contrast: 1.20,
-      saturation: 1.15,
       frameTemplate: 'polaroid', // 'polaroid' | 'full'
+
+      // Transform & Composition State
+      rotation: 0,   // 0, 90, 180, 270
+      flipH: false,  // boolean
+      zoom: 1.0,     // 1.0 .. 3.0
+      panX: 0,       // px
+      panY: 0,       // px
+
+      // Basic Tone Adjustments
+      brightness: 0,      // -50 .. +50
+      contrast: 1.20,     // 0.60 .. 1.60
+      saturation: 1.15,   // 0.00 .. 2.00
+      warmth: 0,          // -50 .. +50
+      sharpness: 0.40,    // 0.00 .. 1.00
+      redDamper: 1.15,    // 1.00 .. 1.50
+
       packed30kPayload: null,
       presets: []
     };
@@ -34,24 +47,32 @@ class EinkApp {
   }
 
   async init() {
-    console.log('Initializing EinkProject Darkroom Studio...');
+    console.log('Initializing EinkProject iOS Darkroom App...');
 
-    // 1. Initialize Frame Simulator Component
+    // 1. Initialize Frame Simulator with Touch Pan & Zoom Handlers
     const simContainer = document.getElementById('frameSimContainer');
-    this.simulator = new FrameSimulator(simContainer);
+    this.simulator = new FrameSimulator(simContainer, {
+      onPan: (dx, dy) => {
+        this.state.panX += dx;
+        this.state.panY += dy;
+        this.renderPipeline(false);
+      },
+      onZoomDelta: (delta) => {
+        this.state.zoom = Math.min(3.0, Math.max(1.0, this.state.zoom + delta));
+        this.renderPipeline(false);
+      }
+    });
 
-    // 2. Initialize NFC Modal Component
+    // 2. Initialize NFC Flash Modal
     const modalEl = document.getElementById('nfcModal');
     this.nfcModal = new NFCModal(modalEl, {
       onFlashSuccess: (meta) => {
-        console.log('NFC Flash completed:', meta);
         recordFlashTelemetry({
           device_uid: meta.deviceUid,
           frame_bytes: meta.payloadSize,
           preset_id: this.state.selectedPreset?.id || 'none',
           status: 'success'
         });
-        // Trigger simulated hardware refresh
         const ditherResult = this.computeDither();
         if (ditherResult) {
           this.simulator.triggerWaveformRefresh(ditherResult.imageData);
@@ -59,19 +80,17 @@ class EinkApp {
       }
     });
 
-    // 3. Load presets
+    // 3. Load presets & build UI
     await this.loadPresets();
-
-    // 4. Bind UI event listeners
     this.bindEvents();
 
-    // 5. Load default image
+    // 4. Load initial sample
     await this.loadImage(this.state.imageSrc);
   }
 
   async loadPresets() {
     const shelf = document.getElementById('filmShelfContainer');
-    shelf.innerHTML = '<div style="color: var(--color-text-secondary); padding: 12px;">加载胶片预设库...</div>';
+    shelf.innerHTML = '<div style="color: var(--color-text-secondary); padding: 12px;">加载胶片库...</div>';
 
     try {
       this.state.presets = await fetchFilters();
@@ -81,16 +100,11 @@ class EinkApp {
     }
 
     shelf.innerHTML = '';
+    if (!this.state.presets.length) return;
 
-    if (!this.state.presets.length) {
-      shelf.innerHTML = '<div style="color: var(--color-text-secondary);">暂无预设</div>';
-      return;
-    }
-
-    // Default select Polaroid 600
     this.state.selectedPreset = this.state.presets.find(p => p.id === 'polaroid_600') || this.state.presets[0];
 
-    this.state.presets.forEach((preset, idx) => {
+    this.state.presets.forEach((preset) => {
       const card = document.createElement('div');
       card.className = `film-card ${preset.id === this.state.selectedPreset.id ? 'active' : ''}`;
       card.dataset.id = preset.id;
@@ -134,148 +148,193 @@ class EinkApp {
   }
 
   bindEvents() {
-    // Quick sample photo switchers
-    const sampleSunset = document.getElementById('sampleSunset');
-    const samplePortrait = document.getElementById('samplePortrait');
-    const sampleStreet = document.getElementById('sampleStreet');
+    // Tab switching (Presets / Toning / Framing)
+    const tabs = document.querySelectorAll('.tab-btn');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const targetId = tab.dataset.tab;
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        const activePanel = document.getElementById(targetId);
+        if (activePanel) activePanel.classList.add('active');
+      });
+    });
 
-    const setSampleActive = (btn, src) => {
-      [sampleSunset, samplePortrait, sampleStreet].forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      this.loadImage(src);
-    };
+    // Transform controls: Rotate CCW / CW / Flip
+    document.getElementById('btnRotateCCW').addEventListener('click', () => {
+      this.state.rotation = (this.state.rotation - 90 + 360) % 360;
+      this.renderPipeline(false);
+    });
 
-    if (sampleSunset) sampleSunset.addEventListener('click', () => setSampleActive(sampleSunset, 'assets/samples/sunset.png'));
-    if (samplePortrait) samplePortrait.addEventListener('click', () => setSampleActive(samplePortrait, 'assets/samples/portrait.png'));
-    if (sampleStreet) sampleStreet.addEventListener('click', () => setSampleActive(sampleStreet, 'assets/samples/street.png'));
+    document.getElementById('btnRotateCW').addEventListener('click', () => {
+      this.state.rotation = (this.state.rotation + 90) % 360;
+      this.renderPipeline(false);
+    });
+
+    document.getElementById('btnFlipH').addEventListener('click', () => {
+      this.state.flipH = !this.state.flipH;
+      document.getElementById('btnFlipH').classList.toggle('active', this.state.flipH);
+      this.renderPipeline(false);
+    });
+
+    // Toggle Split View & Texture
+    const btnSplit = document.getElementById('btnToggleSplit');
+    btnSplit.addEventListener('click', () => {
+      const enabled = !btnSplit.classList.contains('active');
+      btnSplit.classList.toggle('active', enabled);
+      this.simulator.toggleSplit(enabled);
+    });
+
+    const btnTexture = document.getElementById('btnToggleTexture');
+    btnTexture.addEventListener('click', () => {
+      const enabled = !btnTexture.classList.contains('active');
+      btnTexture.classList.toggle('active', enabled);
+      this.simulator.toggleTexture(enabled);
+    });
+
+    // Reset All (Rotation, Crop, Tone)
+    document.getElementById('btnResetAll').addEventListener('click', () => {
+      this.resetTransform();
+      this.resetTones();
+      this.renderPipeline(false);
+    });
+
+    document.getElementById('btnResetTone').addEventListener('click', () => {
+      this.resetTones();
+      this.renderPipeline(false);
+    });
+
+    // Sliders
+    this.bindSlider('sliderBrightness', 'valBrightness', (v) => { this.state.brightness = v; }, (v) => v);
+    this.bindSlider('sliderContrast', 'valContrast', (v) => { this.state.contrast = v; }, (v) => v.toFixed(2));
+    this.bindSlider('sliderSaturation', 'valSaturation', (v) => { this.state.saturation = v; }, (v) => v.toFixed(2));
+    this.bindSlider('sliderWarmth', 'valWarmth', (v) => { this.state.warmth = v; }, (v) => v);
+    this.bindSlider('sliderSharpness', 'valSharpness', (v) => { this.state.sharpness = v / 100; }, (v) => `${v}%`);
+    this.bindSlider('sliderRedDamper', 'valRedDamper', (v) => { this.state.redDamper = v; }, (v) => v.toFixed(2));
+
+    // Framing buttons
+    const btnPolaroid = document.getElementById('btnFramePolaroid');
+    const btnFull = document.getElementById('btnFrameFull');
+    btnPolaroid.addEventListener('click', () => {
+      btnPolaroid.classList.add('active');
+      btnFull.classList.remove('active');
+      this.state.frameTemplate = 'polaroid';
+      this.renderPipeline(false);
+    });
+    btnFull.addEventListener('click', () => {
+      btnFull.classList.add('active');
+      btnPolaroid.classList.remove('active');
+      this.state.frameTemplate = 'full';
+      this.renderPipeline(false);
+    });
+
+    // Dither algorithm buttons
+    const btnAtkinson = document.getElementById('btnAtkinson');
+    const btnFloyd = document.getElementById('btnFloyd');
+    btnAtkinson.addEventListener('click', () => {
+      btnAtkinson.classList.add('active');
+      btnFloyd.classList.remove('active');
+      this.state.ditherAlgorithm = 'atkinson';
+      this.renderPipeline(false);
+    });
+    btnFloyd.addEventListener('click', () => {
+      btnFloyd.classList.add('active');
+      btnAtkinson.classList.remove('active');
+      this.state.ditherAlgorithm = 'floyd';
+      this.renderPipeline(false);
+    });
 
     // Upload photo
     const fileInput = document.getElementById('fileUploadInput');
-    const btnUpload = document.getElementById('btnUploadPhoto');
-    if (btnUpload && fileInput) {
-      btnUpload.addEventListener('click', () => fileInput.click());
-      fileInput.addEventListener('change', (e) => {
-        if (e.target.files && e.target.files[0]) {
-          const reader = new FileReader();
-          reader.onload = (evt) => {
-            [sampleSunset, samplePortrait, sampleStreet].forEach(b => b.classList.remove('active'));
-            this.loadImage(evt.target.result);
-          };
-          reader.readAsDataURL(e.target.files[0]);
-        }
-      });
-    }
+    document.getElementById('btnUploadPhoto').addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          this.resetTransform();
+          this.loadImage(evt.target.result);
+        };
+        reader.readAsDataURL(e.target.files[0]);
+      }
+    });
 
-    // Drag and drop photo onto main stage
-    const dropZone = document.querySelector('.main-stage');
-    if (dropZone) {
-      dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';
-      });
-      dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-          const file = e.dataTransfer.files[0];
-          if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (evt) => this.loadImage(evt.target.result);
-            reader.readAsDataURL(file);
-          }
-        }
-      });
-    }
+    // Sample Picker Action Sheet
+    const sampleSheet = document.getElementById('sampleSheet');
+    document.getElementById('btnOpenSamples').addEventListener('click', () => {
+      sampleSheet.showModal();
+    });
 
-    // Dither algorithm toggle (Atkinson vs Floyd-Steinberg)
-    const btnAtkinson = document.getElementById('btnAtkinson');
-    const btnFloyd = document.getElementById('btnFloyd');
-    if (btnAtkinson && btnFloyd) {
-      btnAtkinson.addEventListener('click', () => {
-        btnAtkinson.classList.add('active');
-        btnFloyd.classList.remove('active');
-        this.state.ditherAlgorithm = 'atkinson';
+    const selectSample = (src) => {
+      sampleSheet.close();
+      this.resetTransform();
+      this.loadImage(src);
+    };
+
+    document.getElementById('sheetSunset').addEventListener('click', () => selectSample('assets/samples/sunset.png'));
+    document.getElementById('sheetPortrait').addEventListener('click', () => selectSample('assets/samples/portrait.png'));
+    document.getElementById('sheetStreet').addEventListener('click', () => selectSample('assets/samples/street.png'));
+
+    // Waveform refresh simulation button
+    document.getElementById('btnTriggerRefresh').addEventListener('click', () => {
+      const ditherResult = this.computeDither();
+      if (ditherResult) {
+        this.simulator.triggerWaveformRefresh(ditherResult.imageData);
+      }
+    });
+
+    // NFC Flash CTA
+    document.getElementById('btnTriggerFlash').addEventListener('click', () => {
+      if (!this.state.packed30kPayload) {
         this.renderPipeline(false);
-      });
-      btnFloyd.addEventListener('click', () => {
-        btnFloyd.classList.add('active');
-        btnAtkinson.classList.remove('active');
-        this.state.ditherAlgorithm = 'floyd';
-        this.renderPipeline(false);
-      });
-    }
+      }
+      this.nfcModal.open(this.state.packed30kPayload);
+    });
+  }
 
-    // Frame style toggle (Polaroid White Border vs Full Bleed)
-    const btnFramePolaroid = document.getElementById('btnFramePolaroid');
-    const btnFrameFull = document.getElementById('btnFrameFull');
-    if (btnFramePolaroid && btnFrameFull) {
-      btnFramePolaroid.addEventListener('click', () => {
-        btnFramePolaroid.classList.add('active');
-        btnFrameFull.classList.remove('active');
-        this.state.frameTemplate = 'polaroid';
-        this.renderPipeline(false);
-      });
-      btnFrameFull.addEventListener('click', () => {
-        btnFrameFull.classList.add('active');
-        btnFramePolaroid.classList.remove('active');
-        this.state.frameTemplate = 'full';
-        this.renderPipeline(false);
-      });
-    }
+  bindSlider(sliderId, valId, setter, formatter) {
+    const slider = document.getElementById(sliderId);
+    const label = document.getElementById(valId);
+    if (!slider || !label) return;
 
-    // Red-damper slider
-    const sliderRedDamper = document.getElementById('sliderRedDamper');
-    const valRedDamper = document.getElementById('valRedDamper');
-    if (sliderRedDamper) {
-      sliderRedDamper.addEventListener('input', (e) => {
-        const val = parseFloat(e.target.value);
-        this.state.redDamper = val;
-        valRedDamper.textContent = val.toFixed(2);
-        this.renderPipeline(false);
-      });
-    }
+    slider.addEventListener('input', (e) => {
+      const v = parseFloat(e.target.value);
+      setter(v);
+      label.textContent = formatter(v);
+      this.renderPipeline(false);
+    });
+  }
 
-    // Contrast slider
-    const sliderContrast = document.getElementById('sliderContrast');
-    const valContrast = document.getElementById('valContrast');
-    if (sliderContrast) {
-      sliderContrast.addEventListener('input', (e) => {
-        const val = parseFloat(e.target.value);
-        this.state.contrast = val;
-        valContrast.textContent = val.toFixed(2);
-        this.renderPipeline(false);
-      });
-    }
+  resetTransform() {
+    this.state.rotation = 0;
+    this.state.flipH = false;
+    this.state.zoom = 1.0;
+    this.state.panX = 0;
+    this.state.panY = 0;
+    const btnFlip = document.getElementById('btnFlipH');
+    if (btnFlip) btnFlip.classList.remove('active');
+  }
 
-    // NFC Flash CTA button
-    const btnTriggerFlash = document.getElementById('btnTriggerFlash');
-    if (btnTriggerFlash) {
-      btnTriggerFlash.addEventListener('click', () => {
-        if (!this.state.packed30kPayload) {
-          this.renderPipeline(false);
-        }
-        this.nfcModal.open(this.state.packed30kPayload);
-      });
-    }
+  resetTones() {
+    this.state.brightness = 0;
+    this.state.contrast = 1.20;
+    this.state.saturation = 1.15;
+    this.state.warmth = 0;
+    this.state.sharpness = 0.40;
+    this.state.redDamper = 1.15;
 
-    // Export .bin button in inspector
-    const btnExportBin = document.getElementById('btnExportBin');
-    if (btnExportBin) {
-      btnExportBin.addEventListener('click', () => {
-        if (this.state.packed30kPayload) {
-          const filmName = this.state.selectedPreset?.id || 'standard';
-          downloadBinaryFile(this.state.packed30kPayload, `eink_${filmName}_400x300.bin`);
-        }
-      });
-    }
-
-    // Export .png button in inspector
-    const btnExportPng = document.getElementById('btnExportPng');
-    if (btnExportPng) {
-      btnExportPng.addEventListener('click', () => {
-        const filmName = this.state.selectedPreset?.id || 'standard';
-        downloadCanvasAsPNG(this.simulator.canvas, `eink_${filmName}_preview.png`);
-      });
-    }
+    document.getElementById('sliderBrightness').value = 0;
+    document.getElementById('valBrightness').textContent = '0';
+    document.getElementById('sliderContrast').value = 1.20;
+    document.getElementById('valContrast').textContent = '1.20';
+    document.getElementById('sliderSaturation').value = 1.15;
+    document.getElementById('valSaturation').textContent = '1.15';
+    document.getElementById('sliderWarmth').value = 0;
+    document.getElementById('valWarmth').textContent = '0';
+    document.getElementById('sliderSharpness').value = 40;
+    document.getElementById('valSharpness').textContent = '40%';
+    document.getElementById('sliderRedDamper').value = 1.15;
+    document.getElementById('valRedDamper').textContent = '1.15';
   }
 
   async loadImage(src) {
@@ -292,7 +351,7 @@ class EinkApp {
   }
 
   /**
-   * Main Photographic & E-Ink Processing Pipeline
+   * Main Photographic & Transformation Pipeline
    */
   async renderPipeline(triggerWaveformAnimation = false) {
     if (!this.state.currentImage) return;
@@ -300,72 +359,67 @@ class EinkApp {
     const ctx = this.offCtx;
     ctx.clearRect(0, 0, 400, 300);
 
-    // 1. Draw image with framing
+    let photoBox = { x: 0, y: 0, w: 400, h: 300 };
+
+    // 1. Polaroid Framing or Full Bleed
     if (this.state.frameTemplate === 'polaroid') {
-      // Polaroid classic framing (White border: Top 16, Left/Right 16, Bottom 46)
       ctx.fillStyle = '#F5F2EB'; // E-ink paper white border
       ctx.fillRect(0, 0, 400, 300);
 
-      const photoX = 16;
-      const photoY = 16;
-      const photoW = 400 - 32; // 368
-      const photoH = 300 - 62; // 238
+      photoBox = { x: 16, y: 16, w: 368, h: 238 };
 
-      this.drawImageCover(ctx, this.state.currentImage, photoX, photoY, photoW, photoH);
-
-      // Subtitle engraving in Polaroid bottom margin
+      // Subtitle
       ctx.fillStyle = '#181818';
       ctx.font = 'bold 11px Inter, sans-serif';
       ctx.textAlign = 'center';
-      const presetTitle = this.state.selectedPreset ? this.state.selectedPreset.name : 'RNI ALL FILMS 5';
-      ctx.fillText(`${presetTitle.toUpperCase()} · 2026`, 200, 278);
-    } else {
-      // Full bleed 400x300
-      this.drawImageCover(ctx, this.state.currentImage, 0, 0, 400, 300);
+      const presetName = this.state.selectedPreset ? this.state.selectedPreset.name : 'RNI ALL FILMS';
+      ctx.fillText(`${presetName.toUpperCase()} · 2026`, 200, 278);
     }
+
+    // 2. Render Image with Rotation, Flip, Zoom and Pan
+    this.renderTransformedImage(ctx, this.state.currentImage, photoBox);
 
     // Set original preview in split comparison
     this.simulator.setOriginalImage(this.offscreenCanvas);
 
-    // 2. Fetch raw image pixels
-    let currentPixels = ctx.getImageData(0, 0, 400, 300);
+    // 3. Extract Pixel Buffer
+    let pixels = ctx.getImageData(0, 0, 400, 300);
 
-    // 3. Apply 3D Film LUT if selected
+    // 4. Apply RNI 3D LUT
     if (this.state.selectedPreset && this.state.selectedPreset.cube_file) {
       try {
         const cubeUrl = `presets/cube/${this.state.selectedPreset.cube_file}`;
         const lut = await loadCubeLUT(cubeUrl);
-        currentPixels = applyLUTToImageData(lut, currentPixels, 1.0);
+        pixels = applyLUTToImageData(lut, pixels, 1.0);
       } catch (err) {
-        console.warn('LUT apply failed, applying parametric grade:', err);
-        currentPixels = applyParametricAdjustments(currentPixels, {
-          contrast: this.state.contrast,
-          saturation: this.state.saturation,
-          warmth: 0.1
-        });
+        console.warn('LUT apply skipped:', err);
       }
-    } else {
-      currentPixels = applyParametricAdjustments(currentPixels, {
-        contrast: this.state.contrast,
-        saturation: this.state.saturation
-      });
     }
 
-    // 4. Quantize & Dither to 4 E-Ink colors
+    // 5. Apply Parametric Darkroom Grading (Brightness, Contrast, Saturation, Warmth, Sharpness)
+    pixels = applyParametricAdjustments(pixels, {
+      brightness: this.state.brightness,
+      contrast: this.state.contrast,
+      saturation: this.state.saturation,
+      warmth: this.state.warmth,
+      sharpness: this.state.sharpness
+    });
+
+    // 6. 4-Color Quantization & Dithering
     let ditherResult;
     if (this.state.ditherAlgorithm === 'atkinson') {
-      ditherResult = ditherAtkinson(currentPixels, this.state.redDamper);
+      ditherResult = ditherAtkinson(pixels, this.state.redDamper);
     } else {
-      ditherResult = ditherFloydSteinberg(currentPixels, this.state.redDamper);
+      ditherResult = ditherFloydSteinberg(pixels, this.state.redDamper);
     }
 
-    // 5. Pack into 30,000 bytes
+    // 7. Hardware 2-Bit Packing (30,000 Bytes)
     this.state.packed30kPayload = pack2BitMSB(ditherResult.indices);
 
-    // 6. Update Hardware Display Canvas
+    // 8. Update Frame Simulator Display
     this.simulator.renderDitheredImage(ditherResult.imageData, triggerWaveformAnimation);
 
-    // 7. Update Histogram Stats in Inspector
+    // 9. Update Palette Histogram
     this.updateHistogramUI(ditherResult.stats);
   }
 
@@ -377,28 +431,40 @@ class EinkApp {
     return ditherFloydSteinberg(pixels, this.state.redDamper);
   }
 
-  drawImageCover(ctx, img, targetX, targetY, targetW, targetH) {
-    const srcW = img.naturalWidth || img.width;
-    const srcH = img.naturalHeight || img.height;
+  /**
+   * Render Transformed Image inside Photo Box with Pan, Zoom, Rotation & Flip
+   */
+  renderTransformedImage(ctx, img, box) {
+    ctx.save();
 
-    const srcAspect = srcW / srcH;
-    const targetAspect = targetW / targetH;
+    // Clip to bounding box
+    ctx.beginPath();
+    ctx.rect(box.x, box.y, box.w, box.h);
+    ctx.clip();
 
-    let renderW, renderH, cropX, cropY;
+    const imgW = img.naturalWidth || img.width;
+    const imgH = img.naturalHeight || img.height;
 
-    if (srcAspect > targetAspect) {
-      renderH = srcH;
-      renderW = srcH * targetAspect;
-      cropX = (srcW - renderW) / 2;
-      cropY = 0;
-    } else {
-      renderW = srcW;
-      renderH = srcW / targetAspect;
-      cropX = 0;
-      cropY = (srcH - renderH) / 2;
-    }
+    // Check if swap width/height due to 90 or 270 degree rotation
+    const isRotated90 = (this.state.rotation === 90 || this.state.rotation === 270);
+    const effectiveW = isRotated90 ? imgH : imgW;
+    const effectiveH = isRotated90 ? imgW : imgH;
 
-    ctx.drawImage(img, cropX, cropY, renderW, renderH, targetX, targetY, targetW, targetH);
+    // Cover scale factor
+    const scale = Math.max(box.w / effectiveW, box.h / effectiveH) * this.state.zoom;
+
+    const centerX = box.x + box.w / 2 + this.state.panX;
+    const centerY = box.y + box.h / 2 + this.state.panY;
+
+    ctx.translate(centerX, centerY);
+    ctx.rotate((this.state.rotation * Math.PI) / 180);
+    ctx.scale(this.state.flipH ? -1 : 1, 1);
+
+    const drawW = imgW * scale;
+    const drawH = imgH * scale;
+
+    ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+    ctx.restore();
   }
 
   updateHistogramUI(stats) {
@@ -414,7 +480,7 @@ class EinkApp {
   }
 }
 
-// Bootstrap when DOM ready
+// Bootstrap
 document.addEventListener('DOMContentLoaded', () => {
   const app = new EinkApp();
   app.init().catch(console.error);
