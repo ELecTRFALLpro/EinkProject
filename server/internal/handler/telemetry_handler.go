@@ -33,3 +33,12 @@ func (h *TelemetryHandler) RecordFlash(c *gin.Context) {
 
 	response.OK(c, gin.H{"recorded": true})
 }
+
+func (h *TelemetryHandler) GetStats(c *gin.Context) {
+	stats, err := h.telemetrySvc.GetStats()
+	if err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+	response.OK(c, stats)
+}

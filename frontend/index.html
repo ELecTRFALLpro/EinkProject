@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="E-Ink NFC 4-Color Photo Frame Darkroom Studio - 电子纸四色墨水屏复古胶片调色与无线烧录工坊">
+  <title>E-Ink Frame · Spotify Darkroom Studio</title>
+  
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- 1. Left Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand-header">
+        <div class="brand-logo-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="#000000">
+            <rect x="3" y="3" width="18" height="18" rx="3" fill="none" stroke="#000" stroke-width="2.5"/>
+            <path d="M8 8h8M8 12h5M8 16h8" stroke="#000" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="brand-title-group">
+          <h1>E-Ink Studio</h1>
+          <span class="brand-subtitle">4.01" E-Paper · 4-Color</span>
+        </div>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item active" id="navStudio">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/>
+          </svg>
+          暗室工坊 (Studio)
+        </li>
+        <li class="nav-item" id="navPresets">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/>
+          </svg>
+          胶片预设 (RNI Films)
+        </li>
+        <li class="nav-item" id="navDevice">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/>
+          </svg>
+          墨水屏相框 (Device)
+        </li>
+      </ul>
+
+      <div class="sidebar-spacer"></div>
+
+      <!-- Device Card Status -->
+      <div class="device-card-mini">
+        <div class="device-card-header">
+          <span class="device-indicator">
+            <span class="device-dot"></span> NFC 就绪
+          </span>
+          <span class="badge badge-green">VERIFIED</span>
+        </div>
+        <div class="device-specs-mini">
+          <div>UID: 04:7A:3B:C2:59:81:80</div>
+          <div>Ed25519: 离线租期永久</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 2. Main Stage -->
+    <main class="main-stage">
+      <!-- Top App Bar -->
+      <header class="top-app-bar">
+        <div class="sample-selector-group">
+          <span class="selector-label">测试样本:</span>
+          <button class="chip-btn active" id="sampleSunset">落日余晖 (Sunset)</button>
+          <button class="chip-btn" id="samplePortrait">胶片人像 (Portrait)</button>
+          <button class="chip-btn" id="sampleStreet">复古街景 (Street)</button>
+        </div>
+
+        <div class="top-bar-actions">
+          <input type="file" id="fileUploadInput" accept="image/*" style="display: none;">
+          <button class="pill-btn pill-btn-ghost" id="btnUploadPhoto">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+            </svg>
+            上传自定义照片
+          </button>
+          <button class="pill-btn pill-btn-primary" id="btnTriggerFlash">
+            ⚡ 烧录至相框 (NFC Flash)
+          </button>
+        </div>
+      </header>
+
+      <!-- Center Workspace Grid -->
+      <div class="workspace-grid">
+        <!-- Canvas Stage & Frame Simulator -->
+        <section class="canvas-center-stage">
+          <div id="frameSimContainer">
+            <!-- Rendered by FrameSimulator component -->
+          </div>
+        </section>
+
+        <!-- Right Parameter Inspector -->
+        <aside class="inspector-panel">
+          <!-- 1. Dithering Mode -->
+          <div class="inspector-section">
+            <div class="section-title">
+              <span>四色抖动算法 (Dither)</span>
+              <span class="badge badge-green">400×300</span>
+            </div>
+            <div class="segmented-control">
+              <button class="segmented-btn active" id="btnAtkinson">Atkinson (锐利人像)</button>
+              <button class="segmented-btn" id="btnFloyd">Floyd-Steinberg (平滑)</button>
+            </div>
+          </div>
+
+          <!-- 2. Framing Mode -->
+          <div class="inspector-section">
+            <div class="section-title">相框样式 (Framing)</div>
+            <div class="segmented-control">
+              <button class="segmented-btn active" id="btnFramePolaroid">经典拍立得白边</button>
+              <button class="segmented-btn" id="btnFrameFull">全屏铺满 (Full Bleed)</button>
+            </div>
+          </div>
+
+          <!-- 3. Red Damper Factor Slider -->
+          <div class="inspector-section">
+            <div class="slider-control-group">
+              <div class="slider-label-row">
+                <span>防红斑阻尼 (Red Damper)</span>
+                <span class="slider-val" id="valRedDamper">1.15</span>
+              </div>
+              <input type="range" id="sliderRedDamper" min="1.00" max="1.50" step="0.01" value="1.15">
+            </div>
+            <div style="font-size: 11px; color: var(--color-text-tertiary); line-height: 1.4;">
+              专为 4 色屏红黄颜料防过饱和定制，温润肤色，消除突兀红斑块。
+            </div>
+          </div>
+
+          <!-- 4. Contrast Slider -->
+          <div class="inspector-section">
+            <div class="slider-control-group">
+              <div class="slider-label-row">
+                <span>动态对比度 (Contrast)</span>
+                <span class="slider-val" id="valContrast">1.20</span>
+              </div>
+              <input type="range" id="sliderContrast" min="0.80" max="1.60" step="0.02" value="1.20">
+            </div>
+          </div>
+
+          <!-- 5. E-Ink 4-Color Distribution -->
+          <div class="inspector-section">
+            <div class="section-title">墨水屏颜料占比 (Histogram)</div>
+            <div class="histogram-grid">
+              <div class="histogram-cell">
+                <div class="hist-swatch" style="background: var(--color-eink-black);"></div>
+                <span class="hist-label">黑 (Black)</span>
+                <span class="hist-pct" id="histBlackPct">0%</span>
+              </div>
+              <div class="histogram-cell">
+                <div class="hist-swatch" style="background: var(--color-eink-white);"></div>
+                <span class="hist-label">白 (White)</span>
+                <span class="hist-pct" id="histWhitePct">0%</span>
+              </div>
+              <div class="histogram-cell">
+                <div class="hist-swatch" style="background: var(--color-eink-yellow);"></div>
+                <span class="hist-label">黄 (Yellow)</span>
+                <span class="hist-pct" id="histYellowPct">0%</span>
+              </div>
+              <div class="histogram-cell">
+                <div class="hist-swatch" style="background: var(--color-eink-red);"></div>
+                <span class="hist-label">红 (Red)</span>
+                <span class="hist-pct" id="histRedPct">0%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6. Export Actions -->
+          <div class="inspector-section">
+            <div style="display: flex; gap: 8px;">
+              <button class="pill-btn pill-btn-ghost full-width" id="btnExportBin">
+                💾 导出 30KB .bin
+              </button>
+              <button class="pill-btn pill-btn-ghost full-width" id="btnExportPng">
+                🖼️ 保存预览图
+              </button>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- 3. Fixed Bottom Shelf: RNI Film Presets Carousel -->
+      <section class="film-shelf-dock">
+        <div class="shelf-header">
+          <div class="shelf-title">
+            <span>RNI All Films 5 Pro · 精选胶片色彩库</span>
+            <span class="badge badge-green">3D CUBE LUT</span>
+          </div>
+          <span style="font-size: 11px; color: var(--color-text-secondary);">
+            点击即刻套用色彩倾向 · 支持左右滑动
+          </span>
+        </div>
+        <div class="film-cards-scroll-container" id="filmShelfContainer">
+          <!-- Populated dynamically by app.js -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 4. NFC Flash Modal (Native <dialog>) -->
+  <dialog id="nfcModal" closedby="any"></dialog>
+
+  <!-- Main JavaScript App -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

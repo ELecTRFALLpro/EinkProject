@@ -1,0 +1,862 @@
+/**
+ * Application Layout & Component Styles
+ * Spotify-Inspired Darkroom Studio for E-Ink NFC Photo Frame
+ */
+
+/* Shell Container */
+.app-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--color-bg-base);
+}
+
+/* 1. Left Sidebar Navigation (Spotify Desktop Style) */
+.sidebar {
+  width: 250px;
+  background-color: #000000;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-right: 1px solid var(--color-border-subtle);
+  padding: 24px 16px;
+  user-select: none;
+}
+
+.brand-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 24px 8px;
+}
+
+.brand-logo-icon {
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, #1ED760 0%, #15883e 100%);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(30, 215, 96, 0.3);
+}
+
+.brand-title-group h1 {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+}
+
+.brand-subtitle {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.nav-menu {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--radius-inner);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  color: var(--color-text-primary);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.nav-item.active {
+  color: var(--color-accent-primary);
+  background-color: rgba(30, 215, 96, 0.1);
+}
+
+.sidebar-spacer {
+  flex: 1;
+}
+
+.device-card-mini {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.device-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.device-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent-primary);
+}
+
+.device-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--color-accent-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--color-accent-primary);
+}
+
+.device-specs-mini {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+}
+
+/* 2. Main Content Stage */
+.main-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  position: relative;
+  background: radial-gradient(circle at 50% 10%, #1e1e1e 0%, var(--color-bg-base) 60%);
+}
+
+/* Top App Bar */
+.top-app-bar {
+  height: 64px;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: rgba(18, 18, 18, 0.85);
+  backdrop-filter: blur(20px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.sample-selector-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selector-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-right: 4px;
+}
+
+.chip-btn {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chip-btn:hover {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+}
+
+.chip-btn.active {
+  background: rgba(30, 215, 96, 0.15);
+  color: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+}
+
+.top-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Workspace Grid */
+.workspace-grid {
+  display: flex;
+  flex: 1;
+  padding: 24px 32px 140px 32px;
+  gap: 32px;
+}
+
+.canvas-center-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 480px;
+}
+
+/* E-Ink Hardware Frame Mockup */
+.frame-simulator-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.frame-bezel {
+  background: linear-gradient(145deg, #1e1e1e 0%, #111111 100%);
+  border-radius: var(--radius-bezel);
+  padding: 24px 28px 32px 28px;
+  box-shadow: var(--shadow-bezel);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  transition: transform 0.3s ease;
+  max-width: 520px;
+  width: 100%;
+}
+
+.frame-inner-mat {
+  background: #0d0d0d;
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.8);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.screen-viewport {
+  position: relative;
+  width: 400px;
+  height: 300px;
+  aspect-ratio: 4 / 3;
+  background-color: var(--color-eink-white);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.4);
+}
+
+.eink-canvas, .split-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  display: block;
+}
+
+/* Paper Grain Texture (Simulates ambient diffuse e-paper reflectance) */
+.paper-grain-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(0,0,0,0.06) 15%, transparent 16%),
+                    radial-gradient(rgba(255,255,255,0.04) 15%, transparent 16%);
+  background-size: 4px 4px;
+  background-position: 0 0, 2px 2px;
+  opacity: 0.65;
+  mix-blend-mode: multiply;
+}
+
+/* Electrophoretic Waveform Refresh Animations */
+.refresh-flash-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.08s ease;
+}
+
+.refresh-flash-overlay.active.phase-1-invert {
+  opacity: 1;
+  background: #000000;
+  mix-blend-mode: difference;
+}
+
+.refresh-flash-overlay.active.phase-1-whiteout {
+  opacity: 1;
+  background: #FFFFFF;
+  mix-blend-mode: normal;
+}
+
+.refresh-flash-overlay.active.phase-2-color-excitation {
+  opacity: 0.85;
+  background-image: repeating-linear-gradient(45deg,
+    #F4C430 0px, #F4C430 4px,
+    #D8262C 4px, #D8262C 8px,
+    #181818 8px, #181818 12px
+  );
+  animation: noisePulse 0.12s infinite alternate;
+}
+
+@keyframes noisePulse {
+  0% { transform: scale(1.0) translateY(0); filter: brightness(1.2); }
+  100% { transform: scale(1.01) translateY(-2px); filter: brightness(0.8); }
+}
+
+.refresh-flash-overlay.active.phase-3-settling {
+  opacity: 0.2;
+  background: #F5F2EB;
+  transition: opacity 0.35s ease;
+}
+
+/* Split Screen Drag Handle */
+.split-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  cursor: ew-resize;
+  z-index: 10;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.split-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-accent-primary);
+  box-shadow: 0 0 8px var(--color-accent-glow);
+}
+
+.split-knob {
+  width: 28px;
+  height: 28px;
+  background: var(--color-accent-primary);
+  color: #000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  z-index: 11;
+}
+
+.frame-engraving {
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.12em;
+}
+
+/* Simulator Bottom Toolbar */
+.sim-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 520px;
+  gap: 12px;
+}
+
+.sim-toolbar-group {
+  display: flex;
+  gap: 6px;
+}
+
+/* 3. Right Inspector & Parameter Controls */
+.inspector-panel {
+  width: 360px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-card);
+}
+
+.inspector-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.segmented-control {
+  display: flex;
+  background: #000000;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.segmented-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.segmented-btn.active {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+/* Slider Controls */
+.slider-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slider-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.slider-val {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: #3e3e3e;
+  border-radius: 2px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  transition: transform 0.1s, background-color 0.1s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  background: var(--color-accent-primary);
+}
+
+/* Palette Distribution Histogram */
+.histogram-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.histogram-cell {
+  background: #000000;
+  border-radius: var(--radius-inner);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.hist-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.hist-label {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+}
+
+.hist-pct {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+/* 4. Film Preset Shelf (Fixed Bottom Drawer, Spotify Carousel Style) */
+.film-shelf-dock {
+  position: fixed;
+  bottom: 0;
+  left: 250px;
+  right: 0;
+  background: rgba(18, 18, 18, 0.95);
+  backdrop-filter: blur(24px);
+  border-top: 1px solid var(--color-border-subtle);
+  padding: 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 40;
+}
+
+.shelf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shelf-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.film-cards-scroll-container {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scroll-behavior: smooth;
+}
+
+.film-card {
+  width: 140px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  position: relative;
+}
+
+.film-card:hover {
+  background: var(--color-bg-elevated);
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.film-card.active {
+  border: 2px solid var(--color-accent-primary);
+  background: #202020;
+  box-shadow: 0 4px 16px rgba(30, 215, 96, 0.2);
+}
+
+.film-card-thumb {
+  width: 100%;
+  height: 75px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #000;
+  position: relative;
+}
+
+.film-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.film-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.film-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.film-card-tag {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.film-card-active-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  background: var(--color-accent-primary);
+  color: #000;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+.film-card.active .film-card-active-check {
+  display: flex;
+}
+
+/* 5. Native <dialog> Modal (NFC Flash) */
+dialog#nfcModal {
+  margin: auto;
+  border: 1px solid var(--color-border-focus);
+  background: #181818;
+  border-radius: var(--radius-modal);
+  padding: 0;
+  color: var(--color-text-primary);
+  max-width: 480px;
+  width: 90vw;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+  outline: none;
+}
+
+dialog#nfcModal::backdrop {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(16px);
+}
+
+.nfc-modal-content {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--color-text-primary);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.nfc-modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.nfc-pulse-svg {
+  filter: drop-shadow(0 0 12px var(--color-accent-glow));
+}
+
+.pulse-center {
+  fill: var(--color-accent-primary);
+}
+
+.pulse-ring {
+  fill: none;
+  stroke: var(--color-accent-primary);
+  stroke-width: 2;
+  opacity: 0.4;
+  transform-origin: center;
+  animation: pulseAnimation 2s infinite ease-out;
+}
+
+.pulse-ring-2 { animation-delay: 0.4s; }
+.pulse-ring-3 { animation-delay: 0.8s; }
+
+@keyframes pulseAnimation {
+  0% { transform: scale(0.6); opacity: 0.8; }
+  100% { transform: scale(1.1); opacity: 0; }
+}
+
+.nfc-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.nfc-subtitle {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.nfc-telemetry-box {
+  background: #101010;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-inner);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.telemetry-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.telemetry-label {
+  color: var(--color-text-secondary);
+}
+
+.telemetry-value {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.nfc-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nfc-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #2a2a2a;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.nfc-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #169C46 0%, #1ED760 100%);
+  border-radius: var(--radius-pill);
+  transition: width 0.3s ease;
+}
+
+.nfc-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.nfc-success-banner {
+  background: rgba(30, 215, 96, 0.12);
+  border: 1px solid rgba(30, 215, 96, 0.3);
+  border-radius: var(--radius-inner);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.success-icon {
+  width: 28px;
+  height: 28px;
+  background: var(--color-accent-primary);
+  color: #000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.success-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  gap: 2px;
+}
+
+.modal-secondary-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.modal-secondary-actions .pill-btn {
+  flex: 1;
+}
+
+/* Mobile Responsive */
+@media (max-width: 900px) {
+  .app-layout {
+    flex-direction: column;
+  }
+  .sidebar {
+    display: none;
+  }
+  .workspace-grid {
+    flex-direction: column;
+    padding: 16px;
+    gap: 20px;
+  }
+  .film-shelf-dock {
+    left: 0;
+    padding: 12px 16px;
+  }
+  .inspector-panel {
+    width: 100%;
+  }
+}

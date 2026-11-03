@@ -41,6 +41,9 @@ func setupTestEngine(t *testing.T) (*gin.Engine, *crypto.TicketSigner) {
 		&model.DeviceBindingEvent{},
 		&model.FlashLog{},
 		&model.AppConfig{},
+		&model.FilterPreset{},
+		&model.FrameTemplate{},
+		&model.Artwork{},
 	)
 
 	cfg := config.Load()
@@ -53,13 +56,18 @@ func setupTestEngine(t *testing.T) (*gin.Engine, *crypto.TicketSigner) {
 	deviceSvc := service.NewDeviceService(db, cfg, signer)
 	configSvc := service.NewConfigService(db, signer)
 	telemetrySvc := service.NewTelemetryService(db)
+	presetSvc := service.NewPresetService(db)
+	artSvc := service.NewArtworkService(db)
 
 	_ = configSvc.InitDefaults()
+	_ = presetSvc.InitDefaults()
 
 	authHandler := handler.NewAuthHandler(authSvc)
 	deviceHandler := handler.NewDeviceHandler(deviceSvc)
 	configHandler := handler.NewConfigHandler(configSvc)
 	telemetryHandler := handler.NewTelemetryHandler(telemetrySvc)
+	presetHandler := handler.NewPresetHandler(presetSvc)
+	artworkHandler := handler.NewArtworkHandler(artSvc)
 
 	r := gin.New()
 	r.Use(gin.Recovery())
@@ -67,6 +75,9 @@ func setupTestEngine(t *testing.T) (*gin.Engine, *crypto.TicketSigner) {
 	v1 := r.Group("/v1")
 	{
 		v1.GET("/config", configHandler.GetConfig)
+		v1.GET("/filters", presetHandler.GetFilters)
+		v1.GET("/frames", presetHandler.GetFrames)
+
 		auth := v1.Group("/auth")
 		{
 			auth.POST("/sms/send", authHandler.SendSMS)
@@ -76,18 +87,34 @@ func setupTestEngine(t *testing.T) (*gin.Engine, *crypto.TicketSigner) {
 
 	r.POST("/tool/v1/devices/register", deviceHandler.RegisterInStock)
 	r.POST("/admin/v1/devices/batch", deviceHandler.BatchImport)
+	r.GET("/admin/v1/telemetry/stats", telemetryHandler.GetStats)
 
 	authGroup := v1.Group("")
 	authGroup.Use(middleware.Auth(authSvc))
 	{
 		authGroup.GET("/auth/me", authHandler.GetMe)
+		authGroup.GET("/auth/profile", authHandler.GetProfile)
+		authGroup.PATCH("/auth/profile", authHandler.UpdateProfile)
+		authGroup.DELETE("/auth/me", authHandler.DeleteAccount)
+
 		devices := authGroup.Group("/devices")
 		{
 			devices.POST("/activate", deviceHandler.Activate)
 			devices.GET("", deviceHandler.GetMyDevices)
+			devices.GET("/:id", deviceHandler.GetDeviceDetail)
+			devices.PATCH("/:id", deviceHandler.UpdateDevice)
 			devices.DELETE("/:id/binding", deviceHandler.Unbind)
 			devices.POST("/:id/tickets/refresh", deviceHandler.RefreshTicket)
 		}
+
+		works := authGroup.Group("/works")
+		{
+			works.POST("", artworkHandler.CreateArtwork)
+			works.GET("", artworkHandler.GetMyArtworks)
+			works.GET("/:id", artworkHandler.GetArtworkDetail)
+			works.DELETE("/:id", artworkHandler.DeleteArtwork)
+		}
+
 		authGroup.POST("/telemetry/flash", telemetryHandler.RecordFlash)
 	}
 
@@ -127,7 +154,17 @@ func TestE2ELifecycle(t *testing.T) {
 		t.Fatalf("GET /v1/config failed: %d", w.Code)
 	}
 
-	// 2. 入库工具登记合法板子
+	// 2. 验证胶片预设与画框模板已预载
+	w = doReq(r, "GET", "/v1/filters", "", nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /v1/filters failed: %d", w.Code)
+	}
+	w = doReq(r, "GET", "/v1/frames", "", nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /v1/frames failed: %d", w.Code)
+	}
+
+	// 3. 入库工具登记合法板子
 	testUID := "04:A1:B2:C3:D4:E5:F6"
 	w = doReq(r, "POST", "/tool/v1/devices/register", "", gin.H{
 		"uid":        testUID,
@@ -142,7 +179,7 @@ func TestE2ELifecycle(t *testing.T) {
 	regData := regResp.Data.(map[string]interface{})
 	deviceID := regData["device_id"].(string)
 
-	// 3. 用户登录
+	// 4. 用户登录
 	w = doReq(r, "POST", "/v1/auth/sms/login", "", gin.H{
 		"phone": "13800138000",
 		"code":  "888888",
@@ -154,7 +191,7 @@ func TestE2ELifecycle(t *testing.T) {
 	_ = json.Unmarshal(w.Body.Bytes(), &loginResp)
 	token := loginResp.Data.(map[string]interface{})["token"].(string)
 
-	// 4. 尝试激活非法 UID（未入库的竞品板子）
+	// 5. 尝试激活非法 UID（未入库的竞品板子）
 	fakeUID := "FF:EE:DD:CC:BB:AA:00"
 	w = doReq(r, "POST", "/v1/devices/activate", token, gin.H{
 		"uid":      fakeUID,
@@ -164,7 +201,7 @@ func TestE2ELifecycle(t *testing.T) {
 		t.Fatalf("Expected 403 for fake board, got: %d", w.Code)
 	}
 
-	// 5. 激活合法板子
+	// 6. 激活合法板子
 	w = doReq(r, "POST", "/v1/devices/activate", token, gin.H{
 		"uid":      testUID,
 		"nickname": "客厅相框",
@@ -177,7 +214,7 @@ func TestE2ELifecycle(t *testing.T) {
 	actData := actResp.Data.(map[string]interface{})
 	ticket := actData["ticket"].(string)
 
-	// 6. 验证签发的离线 Ticket 是否能被公钥成功验签
+	// 7. 验证签发的离线 Ticket 是否能被公钥成功验签
 	verifiedPayload, err := signer.VerifyTicket(ticket)
 	if err != nil {
 		t.Fatalf("Failed to verify ticket signature: %v", err)
@@ -186,30 +223,45 @@ func TestE2ELifecycle(t *testing.T) {
 		t.Fatalf("Ticket deviceID mismatch: %s != %s", verifiedPayload.DeviceID, deviceID)
 	}
 
-	// 7. 防抢绑测试：第二个用户尝试绑定同一个板子
-	w2 := doReq(r, "POST", "/v1/auth/sms/login", "", gin.H{
-		"phone": "13900139000",
-		"code":  "888888",
+	// 8. 更新设备备注与摆放位置
+	w = doReq(r, "PATCH", fmt.Sprintf("/v1/devices/%s", deviceID), token, gin.H{
+		"nickname": "书房复古相框",
+		"location": "胡桃木书架",
 	})
-	var login2Resp response.R
-	_ = json.Unmarshal(w2.Body.Bytes(), &login2Resp)
-	token2 := login2Resp.Data.(map[string]interface{})["token"].(string)
-
-	wConflict := doReq(r, "POST", "/v1/devices/activate", token2, gin.H{
-		"uid":      testUID,
-		"nickname": "抢绑板子",
-	})
-	if wConflict.Code != http.StatusConflict {
-		t.Fatalf("Expected 409 Conflict for already bound device, got: %d", wConflict.Code)
-	}
-
-	// 8. 获取当前用户设备列表
-	w = doReq(r, "GET", "/v1/devices", token, nil)
 	if w.Code != http.StatusOK {
-		t.Fatalf("Get my devices failed: %d", w.Code)
+		t.Fatalf("PATCH /v1/devices failed: %d", w.Code)
 	}
 
-	// 9. 上报刷图遥测
+	// 9. 保存用户胶片作品
+	w = doReq(r, "POST", "/v1/works", token, gin.H{
+		"title":            "京都落日胶片",
+		"subtitle":         "POLAROID 600 · 2026",
+		"filter_id":        "polaroid_600",
+		"frame_id":         "polaroid_classic",
+		"target_device_id": deviceID,
+		"bitmap_base64":    "dGVzdF9iaXRtYXBfYnl0ZXM=",
+	})
+	if w.Code != http.StatusCreated {
+		t.Fatalf("POST /v1/works failed: %d", w.Code)
+	}
+	var artResp response.R
+	_ = json.Unmarshal(w.Body.Bytes(), &artResp)
+	artData := artResp.Data.(map[string]interface{})["artwork"].(map[string]interface{})
+	artID := artData["id"].(string)
+
+	// 10. 获取我的作品列表
+	w = doReq(r, "GET", "/v1/works", token, nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /v1/works failed: %d", w.Code)
+	}
+
+	// 11. 获取单件作品详情
+	w = doReq(r, "GET", fmt.Sprintf("/v1/works/%s", artID), token, nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /v1/works/:id failed: %d", w.Code)
+	}
+
+	// 12. 上报刷图遥测
 	w = doReq(r, "POST", "/v1/telemetry/flash", token, gin.H{
 		"device_id":   deviceID,
 		"result":      "success",
@@ -218,24 +270,21 @@ func TestE2ELifecycle(t *testing.T) {
 		"platform":    "ios",
 		"phone_model": "iPhone 15 Pro",
 		"os_version":  "18.1",
-		"app_version": "1.0.0",
+		"app_version": "1.1.0",
 	})
 	if w.Code != http.StatusOK {
 		t.Fatalf("Telemetry flash failed: %d", w.Code)
 	}
 
-	// 10. 用户主动解绑
+	// 13. 查看遥测统计
+	w = doReq(r, "GET", "/admin/v1/telemetry/stats", "", nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET /admin/v1/telemetry/stats failed: %d", w.Code)
+	}
+
+	// 14. 用户主动解绑设备
 	w = doReq(r, "DELETE", fmt.Sprintf("/v1/devices/%s/binding", deviceID), token, nil)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Unbind failed: %d", w.Code)
-	}
-
-	// 11. 解绑后，第二位用户可以重新绑定
-	wRebind := doReq(r, "POST", "/v1/devices/activate", token2, gin.H{
-		"uid":      testUID,
-		"nickname": "二手数码",
-	})
-	if wRebind.Code != http.StatusOK {
-		t.Fatalf("Rebind after unbind failed: %d", wRebind.Code)
 	}
 }

@@ -1,0 +1,176 @@
+{
+  "global": {
+    "color": {
+      "brand": {
+        "spotify-green": {
+          "value": "#1ED760",
+          "type": "color",
+          "description": "Spotify signature accent green for primary CTA and active rings"
+        },
+        "spotify-green-hover": {
+          "value": "#1FDF64",
+          "type": "color"
+        },
+        "spotify-green-pressed": {
+          "value": "#169C46",
+          "type": "color"
+        },
+        "spotify-glow": {
+          "value": "rgba(30, 215, 96, 0.35)",
+          "type": "color"
+        }
+      },
+      "surface": {
+        "bg-base": {
+          "value": "#121212",
+          "type": "color",
+          "description": "Deep charcoal background canvas"
+        },
+        "bg-surface": {
+          "value": "#181818",
+          "type": "color",
+          "description": "Default card and tool shelf background"
+        },
+        "bg-elevated": {
+          "value": "#242424",
+          "type": "color",
+          "description": "Elevated card hover and input field background"
+        },
+        "bg-card-hover": {
+          "value": "#2A2A2A",
+          "type": "color"
+        },
+        "border-subtle": {
+          "value": "rgba(255, 255, 255, 0.08)",
+          "type": "color"
+        },
+        "border-focus": {
+          "value": "rgba(255, 255, 255, 0.25)",
+          "type": "color"
+        }
+      },
+      "text": {
+        "primary": {
+          "value": "#FFFFFF",
+          "type": "color"
+        },
+        "secondary": {
+          "value": "#B3B3B3",
+          "type": "color"
+        },
+        "tertiary": {
+          "value": "#727272",
+          "type": "color"
+        },
+        "on-accent": {
+          "value": "#000000",
+          "type": "color"
+        }
+      },
+      "eink": {
+        "black": {
+          "value": "#181818",
+          "type": "color",
+          "description": "Electrophoretic carbon black microcapsule"
+        },
+        "white": {
+          "value": "#F5F2EB",
+          "type": "color",
+          "description": "Electrophoretic titanium dioxide paper warm white"
+        },
+        "yellow": {
+          "value": "#F4C430",
+          "type": "color",
+          "description": "Electrophoretic chrome yellow inorganic pigment"
+        },
+        "red": {
+          "value": "#D8262C",
+          "type": "color",
+          "description": "Electrophoretic azo red saturated pigment"
+        }
+      }
+    },
+    "typography": {
+      "fontFamilies": {
+        "main": {
+          "value": "Circular Std, Inter, -apple-system, sans-serif",
+          "type": "fontFamilies"
+        },
+        "mono": {
+          "value": "SF Mono, Menlo, monospace",
+          "type": "fontFamilies"
+        }
+      },
+      "display": {
+        "fontSize": { "value": "32px", "type": "fontSizes" },
+        "lineHeight": { "value": "38px", "type": "lineHeights" },
+        "fontWeight": { "value": "800", "type": "fontWeights" },
+        "letterSpacing": { "value": "-0.03em", "type": "letterSpacing" }
+      },
+      "title-large": {
+        "fontSize": { "value": "24px", "type": "fontSizes" },
+        "lineHeight": { "value": "30px", "type": "lineHeights" },
+        "fontWeight": { "value": "700", "type": "fontWeights" },
+        "letterSpacing": { "value": "-0.02em", "type": "letterSpacing" }
+      },
+      "title-medium": {
+        "fontSize": { "value": "18px", "type": "fontSizes" },
+        "lineHeight": { "value": "24px", "type": "lineHeights" },
+        "fontWeight": { "value": "600", "type": "fontWeights" },
+        "letterSpacing": { "value": "-0.01em", "type": "letterSpacing" }
+      },
+      "body": {
+        "fontSize": { "value": "14px", "type": "fontSizes" },
+        "lineHeight": { "value": "20px", "type": "lineHeights" },
+        "fontWeight": { "value": "400", "type": "fontWeights" }
+      },
+      "body-medium": {
+        "fontSize": { "value": "14px", "type": "fontSizes" },
+        "lineHeight": { "value": "20px", "type": "lineHeights" },
+        "fontWeight": { "value": "600", "type": "fontWeights" }
+      },
+      "caption": {
+        "fontSize": { "value": "11px", "type": "fontSizes" },
+        "lineHeight": { "value": "14px", "type": "lineHeights" },
+        "fontWeight": { "value": "700", "type": "fontWeights" },
+        "letterSpacing": { "value": "0.06em", "type": "letterSpacing" }
+      }
+    },
+    "spacing": {
+      "1": { "value": "4px", "type": "spacing" },
+      "2": { "value": "8px", "type": "spacing" },
+      "3": { "value": "12px", "type": "spacing" },
+      "4": { "value": "16px", "type": "spacing" },
+      "5": { "value": "20px", "type": "spacing" },
+      "6": { "value": "24px", "type": "spacing" },
+      "8": { "value": "32px", "type": "spacing" },
+      "12": { "value": "48px", "type": "spacing" }
+    },
+    "borderRadius": {
+      "pill": { "value": "9999px", "type": "borderRadius", "description": "Spotify signature pill shape" },
+      "modal": { "value": "20px", "type": "borderRadius" },
+      "bezel": { "value": "16px", "type": "borderRadius" },
+      "card": { "value": "12px", "type": "borderRadius" },
+      "inner": { "value": "8px", "type": "borderRadius" },
+      "badge": { "value": "4px", "type": "borderRadius" }
+    },
+    "boxShadow": {
+      "card": {
+        "value": "0 8px 24px rgba(0, 0, 0, 0.5)",
+        "type": "boxShadow"
+      },
+      "card-hover": {
+        "value": "0 16px 36px rgba(0, 0, 0, 0.75)",
+        "type": "boxShadow"
+      },
+      "accent-glow": {
+        "value": "0 0 24px rgba(30, 215, 96, 0.35)",
+        "type": "boxShadow"
+      },
+      "hardware-frame": {
+        "value": "0 20px 50px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.06)",
+        "type": "boxShadow"
+      }
+    }
+  }
+}

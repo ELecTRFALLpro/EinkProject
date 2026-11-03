@@ -171,3 +171,40 @@ func (h *DeviceHandler) RefreshTicket(c *gin.Context) {
 		"payload": payload,
 	})
 }
+
+type UpdateDeviceReq struct {
+	Nickname string `json:"nickname"`
+	Location string `json:"location"`
+}
+
+func (h *DeviceHandler) UpdateDevice(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	deviceID := c.Param("id")
+
+	var req UpdateDeviceReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "PARAM_ERROR", err.Error())
+		return
+	}
+
+	dev, err := h.deviceSvc.UpdateDevice(userID, deviceID, req.Nickname, req.Location)
+	if err != nil {
+		response.BadRequest(c, "UPDATE_FAILED", err.Error())
+		return
+	}
+
+	response.OK(c, gin.H{"device": dev})
+}
+
+func (h *DeviceHandler) GetDeviceDetail(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	deviceID := c.Param("id")
+
+	dev, err := h.deviceSvc.GetDevice(userID, deviceID)
+	if err != nil {
+		response.NotFound(c, err.Error())
+		return
+	}
+
+	response.OK(c, gin.H{"device": dev})
+}

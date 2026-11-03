@@ -1,0 +1,86 @@
+[
+  {
+    "id": "fuji_astia_100f",
+    "name": "Fuji Astia 100F",
+    "category": "portrait",
+    "cube_file": "fuji_astia_100f.cube",
+    "divisions": 32
+  },
+  {
+    "id": "fuji_fp_100c",
+    "name": "Fuji FP 100C",
+    "category": "instant",
+    "cube_file": "fuji_fp_100c.cube",
+    "divisions": 32
+  },
+  {
+    "id": "fuji_instax_mini",
+    "name": "Fuji Instax Mini",
+    "category": "instant",
+    "cube_file": "fuji_instax_mini.cube",
+    "divisions": 32
+  },
+  {
+    "id": "fuji_provia_100f",
+    "name": "Fuji Provia 100F",
+    "category": "film",
+    "cube_file": "fuji_provia_100f.cube",
+    "divisions": 32
+  },
+  {
+    "id": "fuji_superia_400",
+    "name": "Fuji Superia 400",
+    "category": "film",
+    "cube_file": "fuji_superia_400.cube",
+    "divisions": 32
+  },
+  {
+    "id": "fuji_velvia_100f",
+    "name": "Fuji Velvia 100F",
+    "category": "film",
+    "cube_file": "fuji_velvia_100f.cube",
+    "divisions": 32
+  },
+  {
+    "id": "ilford_hp5",
+    "name": "Ilford HP5",
+    "category": "mono",
+    "cube_file": "ilford_hp5.cube",
+    "divisions": 32
+  },
+  {
+    "id": "kodachrome_1958",
+    "name": "Kodachrome 1958",
+    "category": "vintage",
+    "cube_file": "kodachrome_1958.cube",
+    "divisions": 32
+  },
+  {
+    "id": "kodak_ektar_100",
+    "name": "Kodak Ektar 100",
+    "category": "film",
+    "cube_file": "kodak_ektar_100.cube",
+    "divisions": 32
+  },
+  {
+    "id": "kodak_portra_400",
+    "name": "Kodak Portra 400",
+    "category": "portrait",
+    "cube_file": "kodak_portra_400.cube",
+    "divisions": 32
+  },
+  {
+    "id": "polaroid_600",
+    "name": "Polaroid 600",
+    "category": "instant",
+    "cube_file": "polaroid_600.cube",
+    "divisions": 32
+  },
+  {
+    "id": "polaroid_669",
+    "name": "Polaroid 669",
+    "category": "instant",
+    "cube_file": "polaroid_669.cube",
+    "divisions": 32
+  }
+]

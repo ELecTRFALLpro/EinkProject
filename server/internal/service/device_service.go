@@ -280,3 +280,40 @@ func (s *DeviceService) RefreshTicket(userID uint64, deviceID, rawUID string) (s
 	normUID := crypto.NormalizeUID(rawUID)
 	return s.signTicketForDevice(&device, normUID, userID)
 }
+
+// UpdateDevice 更新设备备注名和摆放位置
+func (s *DeviceService) UpdateDevice(userID uint64, deviceID, nickname, location string) (*model.Device, error) {
+	var device model.Device
+	err := s.db.Where("id = ? AND owner_user_id = ?", deviceID, userID).First(&device).Error
+	if err != nil {
+		return nil, errors.New("device not found or not owned by user")
+	}
+
+	updates := map[string]interface{}{}
+	if nickname != "" {
+		updates["nickname"] = nickname
+		device.Nickname = nickname
+	}
+	if location != "" {
+		updates["location"] = location
+		device.Location = location
+	}
+
+	if len(updates) > 0 {
+		if err := s.db.Model(&device).Updates(updates).Error; err != nil {
+			return nil, err
+		}
+	}
+
+	return &device, nil
+}
+
+// GetDevice 获取单个设备详情
+func (s *DeviceService) GetDevice(userID uint64, deviceID string) (*model.Device, error) {
+	var device model.Device
+	err := s.db.Where("id = ? AND owner_user_id = ?", deviceID, userID).First(&device).Error
+	if err != nil {
+		return nil, errors.New("device not found or not owned by user")
+	}
+	return &device, nil
+}

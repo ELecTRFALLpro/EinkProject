@@ -46,6 +46,9 @@ func main() {
 		&model.DeviceBindingEvent{},
 		&model.FlashLog{},
 		&model.AppConfig{},
+		&model.FilterPreset{},
+		&model.FrameTemplate{},
+		&model.Artwork{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to automigrate tables: %v", err)
@@ -63,9 +66,14 @@ func main() {
 	deviceSvc := service.NewDeviceService(db, cfg, signer)
 	configSvc := service.NewConfigService(db, signer)
 	telemetrySvc := service.NewTelemetryService(db)
+	presetSvc := service.NewPresetService(db)
+	artSvc := service.NewArtworkService(db)
 
 	if err := configSvc.InitDefaults(); err != nil {
 		log.Fatalf("Failed to init default profiles: %v", err)
+	}
+	if err := presetSvc.InitDefaults(); err != nil {
+		log.Fatalf("Failed to init default presets: %v", err)
 	}
 
 	// 5. 初始化 HTTP Handlers
@@ -73,6 +81,8 @@ func main() {
 	deviceHandler := handler.NewDeviceHandler(deviceSvc)
 	configHandler := handler.NewConfigHandler(configSvc)
 	telemetryHandler := handler.NewTelemetryHandler(telemetrySvc)
+	presetHandler := handler.NewPresetHandler(presetSvc)
+	artworkHandler := handler.NewArtworkHandler(artSvc)
 
 	// 6. 配置 Gin 路由
 	r := gin.Default()
@@ -80,13 +90,15 @@ func main() {
 
 	// 基础健康检查
 	r.GET("/health", func(c *gin.Context) {
-		response.OK(c, gin.H{"status": "ok"})
+		response.OK(c, gin.H{"status": "ok", "app": "eink-frame-backend", "version": "v1.1.0"})
 	})
 
-	// 公开接口
+	// 公开接口 (无需登录)
 	v1 := r.Group("/v1")
 	{
 		v1.GET("/config", configHandler.GetConfig)
+		v1.GET("/filters", presetHandler.GetFilters)
+		v1.GET("/frames", presetHandler.GetFrames)
 
 		auth := v1.Group("/auth")
 		{
@@ -98,19 +110,33 @@ func main() {
 	// 生产入库工具与管理导入接口
 	r.POST("/tool/v1/devices/register", deviceHandler.RegisterInStock)
 	r.POST("/admin/v1/devices/batch", deviceHandler.BatchImport)
+	r.GET("/admin/v1/telemetry/stats", telemetryHandler.GetStats)
 
 	// 需要用户登录鉴权的接口
 	authGroup := v1.Group("")
 	authGroup.Use(middleware.Auth(authSvc))
 	{
 		authGroup.GET("/auth/me", authHandler.GetMe)
+		authGroup.GET("/auth/profile", authHandler.GetProfile)
+		authGroup.PATCH("/auth/profile", authHandler.UpdateProfile)
+		authGroup.DELETE("/auth/me", authHandler.DeleteAccount)
 
 		devices := authGroup.Group("/devices")
 		{
 			devices.POST("/activate", deviceHandler.Activate)
 			devices.GET("", deviceHandler.GetMyDevices)
+			devices.GET("/:id", deviceHandler.GetDeviceDetail)
+			devices.PATCH("/:id", deviceHandler.UpdateDevice)
 			devices.DELETE("/:id/binding", deviceHandler.Unbind)
 			devices.POST("/:id/tickets/refresh", deviceHandler.RefreshTicket)
+		}
+
+		works := authGroup.Group("/works")
+		{
+			works.POST("", artworkHandler.CreateArtwork)
+			works.GET("", artworkHandler.GetMyArtworks)
+			works.GET("/:id", artworkHandler.GetArtworkDetail)
+			works.DELETE("/:id", artworkHandler.DeleteArtwork)
 		}
 
 		authGroup.POST("/telemetry/flash", telemetryHandler.RecordFlash)

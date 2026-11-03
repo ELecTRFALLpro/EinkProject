@@ -122,3 +122,60 @@ func (s *AuthService) ParseJWT(tokenStr string) (uint64, error) {
 
 	return 0, errors.New("invalid token")
 }
+
+// GetProfile 获取用户详细资料
+func (s *AuthService) GetProfile(userID uint64) (*model.User, error) {
+	var user model.User
+	err := s.db.Where("id = ?", userID).First(&user).Error
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+	return &user, nil
+}
+
+// UpdateProfile 更新用户昵称与头像
+func (s *AuthService) UpdateProfile(userID uint64, nickname, avatarURL string) (*model.User, error) {
+	var user model.User
+	err := s.db.Where("id = ?", userID).First(&user).Error
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	updates := map[string]interface{}{}
+	if nickname != "" {
+		updates["nickname"] = nickname
+		user.Nickname = nickname
+	}
+	if avatarURL != "" {
+		updates["avatar_url"] = avatarURL
+		user.AvatarURL = avatarURL
+	}
+
+	if len(updates) > 0 {
+		if err := s.db.Model(&user).Updates(updates).Error; err != nil {
+			return nil, err
+		}
+	}
+	return &user, nil
+}
+
+// DeleteAccount 注销当前账号（合规要求：物理脱敏或逻辑停用并解绑所有设备）
+func (s *AuthService) DeleteAccount(userID uint64) error {
+	// 1. 将所有绑定的设备退回到已入库未绑定状态
+	s.db.Model(&model.Device{}).
+		Where("owner_user_id = ?", userID).
+		Updates(map[string]interface{}{
+			"status":        model.DeviceStatusInStock,
+			"owner_user_id": 0,
+			"bound_at":      nil,
+		})
+
+	// 2. 标记用户账号为 deleted
+	return s.db.Model(&model.User{}).
+		Where("id = ?", userID).
+		Updates(map[string]interface{}{
+			"status":   "deleted",
+			"nickname": "已注销用户",
+			"phone":    fmt.Sprintf("deleted_%d", userID),
+		}).Error
+}
