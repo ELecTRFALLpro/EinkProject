@@ -179,3 +179,4 @@ CREATE TABLE IF NOT EXISTS app_configs (
     value_json TEXT DEFAULT '{}',
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
