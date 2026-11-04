@@ -195,3 +195,58 @@ CREATE INDEX `idx_artworks_created_at` ON `artworks` (`created_at`);
    - 若用户未登录或处于无网离线状态：前端自动将其降级存入浏览器的 `localStorage (eink_offline_artworks)`，登录后与云端无缝合并展示。
 4. **历史相册一键复原编辑现场**：
    - 在「📚 历史」抽屉中点击任意照片卡片，系统读取该记录的 `params_json`，将 Canvas 画面、旋转角、平移量、缩放比、各滑块数值 100% 回填至暗室工作台，支持立刻再次二次创作或直接无线烧录！
+
+---
+
+## 4. Minikube (Kubernetes) 部署与本地联调指南
+
+项目已在 `deploy/` 目录下内置了生产同构的 **PostgreSQL 16 (Alpine)** Kubernetes 部署清单与一键运维脚本：
+
+- **K8s 资源清单**：[`deploy/k8s/postgres.yaml`](file:///Users/Apple/EinkProject/deploy/k8s/postgres.yaml)
+  - `Namespace`: `eink-system`
+  - `Secret`: `eink-postgres-secret`（默认账号 `eink_user` / `eink_pass_2026`，库名 `eink_db`）
+  - `PersistentVolumeClaim`: `eink-postgres-pvc`（`2Gi` 持久化存储卷，Pod 重启数据不丢失）
+  - `StatefulSet`: `eink-postgres`（镜像 `postgres:16-alpine`，内存占用仅 ~35MB，附带 `pg_isready` 探针）
+  - `Service`: `eink-postgres-svc`（ClusterIP `5432` + NodePort `30432`）
+- **初始化 SQL 脚本**：[`deploy/sql/init_schema.sql`](file:///Users/Apple/EinkProject/deploy/sql/init_schema.sql)（全量 11 张表 + `JSONB` 字段 + 索引 + 注释）
+- **一键管理脚本**：[`deploy/scripts/db-manage.sh`](file:///Users/Apple/EinkProject/deploy/scripts/db-manage.sh)
+
+### 4.1 常用操作流程
+
+```bash
+# 1. 启动 Minikube 并一键部署 PostgreSQL 16 + 初始化全量表结构
+./deploy/scripts/db-manage.sh up
+
+# 2. 查看 Pod / PVC / Service 运行状态
+./deploy/scripts/db-manage.sh status
+
+# 3. 将 K8s 内的 PostgreSQL 端口转发到宿主机 127.0.0.1:5432
+./deploy/scripts/db-manage.sh forward
+
+# 4. 启动 Go 后端并自动连接 PostgreSQL 实例
+./deploy/scripts/db-manage.sh run-api
+
+# 5. 进入容器内 psql 交互终端查表调试
+./deploy/scripts/db-manage.sh cli
+```
+
+---
+
+## 5. MySQL 开发者转 PostgreSQL 速查对照表
+
+如果你平时习惯使用 MySQL，在通过 `./deploy/scripts/db-manage.sh cli` 进入 `psql` 终端或使用 Navicat / DataGrip / DBeaver 连接时，只需注意以下几处高频差异：
+
+| 操作目的 | MySQL 常用写法 | PostgreSQL (`psql`) 对应写法 | 说明 |
+| :--- | :--- | :--- | :--- |
+| **查看所有数据库** | `SHOW DATABASES;` | `\l` | 列出所有 database |
+| **切换数据库** | `USE eink_db;` | `\c eink_db` | 切换到指定库 |
+| **查看所有数据表** | `SHOW TABLES;` | `\dt` | 列出当前 `public` schema 下的所有表 |
+| **查看表结构详情** | `DESC users;` 或 `SHOW CREATE TABLE users;` | `\d users` 或 `\d+ users` | 查看字段类型、索引、非空约束与注释 |
+| **查看所有索引** | `SHOW INDEX FROM artworks;` | `\di` | 也可通过 `\d artworks` 直接在底部看到全部索引 |
+| **退出终端** | `exit` / `quit` | `\q` | 退出 `psql` 命令行 |
+| **自增主键** | `BIGINT UNSIGNED AUTO_INCREMENT` | `BIGSERIAL PRIMARY KEY` | PG 自动创建关联 Sequence，GORM 无缝映射 |
+| **标识符引号** | 反引号 `` `user_id` `` | 双引号 `"user_id"` 或不加 | PG 中单引号 `'...'` 仅表示字符串字面量 |
+| **JSON 查询** | `JSON_EXTRACT(params_json, '$.filter_id')` | `params_json->>'filter_id'` | PG 的 `JSONB` 支持 `->`（返回 JSON）与 `->>`（返回文本）及 GIN 索引 |
+| **布尔值类型** | `TINYINT(1)` (`0` / `1`) | `BOOLEAN` (`TRUE` / `FALSE`) | 标准 SQL 布尔类型 |
+| **Upsert (冲突更新)**| `ON DUPLICATE KEY UPDATE ...` | `ON CONFLICT (id) DO UPDATE SET ...`| 幂等写入语法更加明确 |
+
