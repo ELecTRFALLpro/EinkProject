@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="E-Ink Photo Frame Darkroom Studio - 4.01寸四色墨水屏复古胶片调色与无线NFC烧录">
+  <meta name="description" content="E-Ink Photo Frame Darkroom Studio - 4.01寸四色墨水屏复古胶片调色、相册历史与无线NFC烧录">
   <title>E-Ink Darkroom Studio</title>
   
   <link rel="stylesheet" href="css/theme.css">
@@ -34,11 +34,13 @@
       </div>
 
       <div class="nav-right">
-        <button class="ios-icon-btn" id="btnResetAll" title="重置构图与调色">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-            <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-          </svg>
-          重置
+        <!-- History Records Button -->
+        <button class="ios-icon-btn" id="btnOpenHistory" title="查看用户上传与创作的历史相片记录">
+          📚 历史
+        </button>
+        <!-- User Login / Profile Pill Button -->
+        <button class="ios-icon-btn" id="btnUserAuth" title="用户登录与个人中心">
+          👤 登录
         </button>
       </div>
     </header>
@@ -65,6 +67,9 @@
         </button>
         <button class="transform-chip active" id="btnToggleTexture" title="纸面反光微质感">
           ▤ 纸质
+        </button>
+        <button class="transform-chip" id="btnSaveToHistory" title="保存当前调色作品到相册历史" style="color: var(--color-accent-primary); border-color: rgba(30, 215, 96, 0.3);">
+          💾 存入相册
         </button>
       </div>
     </main>
@@ -203,10 +208,91 @@
     </footer>
   </div>
 
-  <!-- 6. NFC Flash Dialog -->
+  <!-- 6. User Login Dialog (Native <dialog>) -->
+  <dialog id="loginModal" closedby="any">
+    <div class="login-modal-content">
+      <button class="modal-close-btn" id="btnCloseLoginModal" aria-label="关闭">✕</button>
+      <div class="login-header">
+        <h2 class="login-title">用户登录 / 注册</h2>
+        <p class="login-subtitle">未注册手机号验证后自动创建账号并开通云相册</p>
+      </div>
+
+      <div class="login-form-group">
+        <div class="login-input-row">
+          <span style="font-weight: 700; color: var(--color-text-secondary); font-size: 13px;">+86</span>
+          <input type="tel" id="inputPhone" class="login-input" placeholder="输入手机号" maxlength="11" value="13800138000">
+        </div>
+
+        <div class="login-input-row">
+          <input type="number" id="inputSMSCode" class="login-input" placeholder="短信验证码" maxlength="6" value="888888">
+          <button type="button" class="sms-send-btn" id="btnSendSMS">获取验证码</button>
+        </div>
+      </div>
+
+      <div class="login-tip-text">
+        💡 提示：开发调试环境下默认验证码为 <strong style="color: var(--color-accent-primary);">888888</strong>，点击一键快速登录。
+      </div>
+
+      <button class="pill-btn pill-btn-primary full-width" id="btnSubmitLogin" style="height: 46px;">
+        登 录
+      </button>
+    </div>
+  </dialog>
+
+  <!-- 7. User Profile Dialog (Native <dialog>) -->
+  <dialog id="profileModal" closedby="any">
+    <div class="profile-modal-content">
+      <button class="modal-close-btn" id="btnCloseProfileModal" aria-label="关闭">✕</button>
+      <div class="sheet-handle"></div>
+      <div class="profile-header-card">
+        <div class="profile-avatar-big" id="profileAvatar">👤</div>
+        <div class="profile-name-group">
+          <span class="profile-name" id="profileNickname">未登录用户</span>
+          <span class="profile-phone" id="profilePhone">未绑定手机号</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+        <div style="display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid var(--color-border-subtle);">
+          <span style="color: var(--color-text-secondary);">云端相册同步</span>
+          <span class="badge badge-green">已激活</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid var(--color-border-subtle);">
+          <span style="color: var(--color-text-secondary);">防盗离线授权</span>
+          <span style="font-family: var(--font-mono); font-weight: 600;">Ed25519 有效</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button class="pill-btn pill-btn-ghost full-width" id="btnLogout">
+          退出当前登录
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 8. History Artworks Gallery Sheet (Native <dialog>) -->
+  <dialog id="historyModal" closedby="any">
+    <div class="history-modal-content">
+      <div class="sheet-handle"></div>
+      <div class="history-header">
+        <div class="history-title-group">
+          <span class="history-title">📚 我的历史照片与作品</span>
+          <span class="badge badge-film" id="historyCountBadge">0 张</span>
+        </div>
+        <button class="modal-close-btn" id="btnCloseHistoryModal" style="position: static;" aria-label="关闭">✕</button>
+      </div>
+
+      <div class="history-scroll-area" id="historyListContainer">
+        <!-- Dynamically rendered -->
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 9. NFC Flash Dialog (Native <dialog>) -->
   <dialog id="nfcModal" closedby="any"></dialog>
 
-  <!-- 7. Sample Photo Picker Action Sheet -->
+  <!-- 10. Sample Photo Picker Action Sheet -->
   <dialog id="sampleSheet" closedby="any">
     <div class="sheet-handle"></div>
     <div class="sheet-title">选择预置摄影样张</div>

@@ -34,6 +34,14 @@ func (s *AuthService) SendSMS(phone string) error {
 
 	code := "888888" // 开发默认码
 	s.smsMap.Store(phone, code)
+	_ = s.db.Create(&model.SMSVerificationCode{
+		Phone:     phone,
+		Code:      code,
+		Purpose:   "login",
+		Status:    "pending",
+		ExpiresAt: time.Now().Add(10 * time.Minute),
+		CreatedAt: time.Now(),
+	})
 	fmt.Printf("[SMS Mock] 发送验证码给手机号 %s: %s\n", phone, code)
 	return nil
 }
@@ -71,6 +79,15 @@ func (s *AuthService) LoginBySMS(phone, code string) (*model.User, string, error
 	if user.Status != "active" {
 		return nil, "", errors.New("user account is disabled")
 	}
+
+	now := time.Now()
+	user.LastLoginAt = &now
+	_ = s.db.Model(&user).Update("last_login_at", &now)
+
+	// 更新验证码状态为 used
+	_ = s.db.Model(&model.SMSVerificationCode{}).
+		Where("phone = ? AND code = ? AND status = 'pending'", phone, code).
+		Update("status", "used")
 
 	// 签发 JWT Token（有效期 30 天）
 	token, err := s.GenerateJWT(user.ID)

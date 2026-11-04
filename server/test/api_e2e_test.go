@@ -35,6 +35,7 @@ func setupTestEngine(t *testing.T) (*gin.Engine, *crypto.TicketSigner) {
 
 	_ = db.AutoMigrate(
 		&model.User{},
+		&model.SMSVerificationCode{},
 		&model.DisplayProfile{},
 		&model.DeviceBatch{},
 		&model.Device{},

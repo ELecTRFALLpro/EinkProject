@@ -41,6 +41,7 @@ func main() {
 	// 2. 自动迁移数据表
 	err = db.AutoMigrate(
 		&model.User{},
+		&model.SMSVerificationCode{},
 		&model.DisplayProfile{},
 		&model.DeviceBatch{},
 		&model.Device{},
@@ -85,6 +86,12 @@ func main() {
 	presetHandler := handler.NewPresetHandler(presetSvc)
 	artworkHandler := handler.NewArtworkHandler(artSvc)
 
+	uploadsDir := "./server/uploads"
+	if _, err := os.Stat(uploadsDir); os.IsNotExist(err) {
+		uploadsDir = "./uploads"
+	}
+	uploadHandler := handler.NewUploadHandler(uploadsDir)
+
 	// 6. 配置 Gin 路由
 	r := gin.Default()
 	r.Use(middleware.CORS())
@@ -103,6 +110,7 @@ func main() {
 		r.StaticFile("/index.html", frontendDir+"/index.html")
 		log.Printf("Frontend static SPA served from: %s", frontendDir)
 	}
+	r.Static("/uploads", uploadsDir)
 
 	// 基础健康检查
 	r.GET("/health", func(c *gin.Context) {
@@ -115,6 +123,8 @@ func main() {
 		v1.GET("/config", configHandler.GetConfig)
 		v1.GET("/filters", presetHandler.GetFilters)
 		v1.GET("/frames", presetHandler.GetFrames)
+
+		v1.POST("/upload", uploadHandler.UploadImage)
 
 		auth := v1.Group("/auth")
 		{

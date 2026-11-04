@@ -27,6 +27,7 @@ type CreateArtworkReq struct {
 	FilterID           string `json:"filter_id"`
 	FrameID            string `json:"frame_id"`
 	DitherMethod       string `json:"dither_method"`
+	ParamsJSON         string `json:"params_json"`
 	TargetDeviceID     string `json:"target_device_id"`
 }
 
@@ -48,6 +49,7 @@ func (h *ArtworkHandler) CreateArtwork(c *gin.Context) {
 		FilterID:           req.FilterID,
 		FrameID:            req.FrameID,
 		DitherMethod:       req.DitherMethod,
+		ParamsJSON:         req.ParamsJSON,
 		TargetDeviceID:     req.TargetDeviceID,
 	})
 	if err != nil {

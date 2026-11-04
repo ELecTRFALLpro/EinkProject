@@ -25,3 +25,9 @@ build/
 
 # Sample large outputs / local caches
 sample_output/*.bin
+
+# Uploads
+server/uploads/*
+!server/uploads/.gitkeep
+*.db
+*.db-journal

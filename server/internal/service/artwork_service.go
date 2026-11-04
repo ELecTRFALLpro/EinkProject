@@ -37,6 +37,7 @@ type CreateArtworkInput struct {
 	FilterID           string
 	FrameID            string
 	DitherMethod       string
+	ParamsJSON         string
 	TargetDeviceID     string
 }
 
@@ -71,6 +72,7 @@ func (s *ArtworkService) CreateArtwork(in CreateArtworkInput) (*model.Artwork, e
 		FilterID:           in.FilterID,
 		FrameID:            in.FrameID,
 		DitherMethod:       in.DitherMethod,
+		ParamsJSON:         in.ParamsJSON,
 		TargetDeviceID:     in.TargetDeviceID,
 		CreatedAt:          now,
 		UpdatedAt:          now,

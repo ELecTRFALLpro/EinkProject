@@ -1,14 +1,27 @@
 /**
  * EinkProject iOS Darkroom App Controller
- * Spotify Dark Theme · Touch Gestures · 3D LUTs · E-Ink Dithering
+ * Spotify Dark Theme · Touch Gestures · 3D LUTs · User Auth & History Photos
  */
 
 import { FrameSimulator } from './components/frame_simulator.js';
 import { NFCModal } from './components/nfc_modal.js';
 import { ditherAtkinson, ditherFloydSteinberg } from './engine/dither.js';
-import { pack2BitMSB, downloadBinaryFile } from './engine/packer.js';
+import { pack2BitMSB, unpack2BitMSB } from './engine/packer.js';
 import { loadCubeLUT, applyLUTToImageData, applyParametricAdjustments } from './engine/lut.js';
-import { fetchFilters, recordFlashTelemetry } from './api.js';
+import {
+  fetchFilters,
+  recordFlashTelemetry,
+  isLoggedIn,
+  getCurrentUser,
+  sendSMS,
+  loginBySMS,
+  logout,
+  fetchProfile,
+  fetchMyArtworks,
+  createArtwork,
+  deleteArtwork,
+  uploadImageFile
+} from './api.js';
 
 class EinkApp {
   constructor() {
@@ -35,7 +48,8 @@ class EinkApp {
       redDamper: 1.15,    // 1.00 .. 1.50
 
       packed30kPayload: null,
-      presets: []
+      presets: [],
+      currentUser: null
     };
 
     this.simulator = null;
@@ -49,7 +63,7 @@ class EinkApp {
   async init() {
     console.log('Initializing EinkProject iOS Darkroom App...');
 
-    // 1. Initialize Frame Simulator with Touch Pan & Zoom Handlers
+    // 1. Initialize Frame Simulator with Touch Pan & Zoom
     const simContainer = document.getElementById('frameSimContainer');
     this.simulator = new FrameSimulator(simContainer, {
       onPan: (dx, dy) => {
@@ -66,13 +80,17 @@ class EinkApp {
     // 2. Initialize NFC Flash Modal
     const modalEl = document.getElementById('nfcModal');
     this.nfcModal = new NFCModal(modalEl, {
-      onFlashSuccess: (meta) => {
+      onFlashSuccess: async (meta) => {
         recordFlashTelemetry({
           device_uid: meta.deviceUid,
           frame_bytes: meta.payloadSize,
           preset_id: this.state.selectedPreset?.id || 'none',
           status: 'success'
         });
+
+        // Auto archive to history on successful flash
+        await this.saveCurrentArtworkToHistory('刷屏记录');
+
         const ditherResult = this.computeDither();
         if (ditherResult) {
           this.simulator.triggerWaveformRefresh(ditherResult.imageData);
@@ -80,12 +98,42 @@ class EinkApp {
       }
     });
 
-    // 3. Load presets & build UI
+    // 3. Check User Login State
+    this.updateUserAuthUI();
+    if (isLoggedIn()) {
+      fetchProfile().then(u => {
+        if (u) {
+          this.state.currentUser = u;
+          this.updateUserAuthUI();
+        }
+      });
+    }
+
+    // 4. Load presets & bind events
     await this.loadPresets();
     this.bindEvents();
+    this.bindAuthAndHistoryEvents();
 
-    // 4. Load initial sample
+    // 5. Load initial sample
     await this.loadImage(this.state.imageSrc);
+  }
+
+  // --- User Auth UI Updates ---
+  updateUserAuthUI() {
+    const user = getCurrentUser();
+    this.state.currentUser = user;
+    const btnAuth = document.getElementById('btnUserAuth');
+
+    if (user && user.nickname) {
+      btnAuth.className = 'user-pill';
+      btnAuth.innerHTML = `
+        <span class="user-avatar-mini">${user.nickname.slice(0, 1) || '用'}</span>
+        <span class="user-name-txt">${user.nickname}</span>
+      `;
+    } else {
+      btnAuth.className = 'ios-icon-btn';
+      btnAuth.innerHTML = `👤 登录`;
+    }
   }
 
   async loadPresets() {
@@ -178,7 +226,7 @@ class EinkApp {
       this.renderPipeline(false);
     });
 
-    // Toggle Split View & Texture
+    // Split View & Texture Toggles
     const btnSplit = document.getElementById('btnToggleSplit');
     btnSplit.addEventListener('click', () => {
       const enabled = !btnSplit.classList.contains('active');
@@ -193,13 +241,7 @@ class EinkApp {
       this.simulator.toggleTexture(enabled);
     });
 
-    // Reset All (Rotation, Crop, Tone)
-    document.getElementById('btnResetAll').addEventListener('click', () => {
-      this.resetTransform();
-      this.resetTones();
-      this.renderPipeline(false);
-    });
-
+    // Reset Tones
     document.getElementById('btnResetTone').addEventListener('click', () => {
       this.resetTones();
       this.renderPipeline(false);
@@ -245,17 +287,31 @@ class EinkApp {
       this.renderPipeline(false);
     });
 
-    // Upload photo
+    // Upload photo from device
     const fileInput = document.getElementById('fileUploadInput');
     document.getElementById('btnUploadPhoto').addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => {
+    fileInput.addEventListener('change', async (e) => {
       if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        // 1. Try uploading to backend /v1/upload if online
+        try {
+          const res = await uploadImageFile(file);
+          if (res && res.url) {
+            this.state.imageSrc = res.url;
+          }
+        } catch (err) {
+          console.warn('Backend file upload skipped, using local DataURL:', err.message);
+        }
+
         const reader = new FileReader();
         reader.onload = (evt) => {
           this.resetTransform();
+          if (!this.state.imageSrc || !this.state.imageSrc.startsWith('/uploads')) {
+            this.state.imageSrc = evt.target.result;
+          }
           this.loadImage(evt.target.result);
         };
-        reader.readAsDataURL(e.target.files[0]);
+        reader.readAsDataURL(file);
       }
     });
 
@@ -268,6 +324,7 @@ class EinkApp {
     const selectSample = (src) => {
       sampleSheet.close();
       this.resetTransform();
+      this.state.imageSrc = src;
       this.loadImage(src);
     };
 
@@ -290,6 +347,321 @@ class EinkApp {
       }
       this.nfcModal.open(this.state.packed30kPayload);
     });
+
+    // Save to History Button
+    document.getElementById('btnSaveToHistory').addEventListener('click', async () => {
+      const btn = document.getElementById('btnSaveToHistory');
+      btn.textContent = '⏳ 保存中...';
+      try {
+        await this.saveCurrentArtworkToHistory();
+        btn.textContent = '✓ 已存入相册';
+        setTimeout(() => { btn.textContent = '💾 存入相册'; }, 2000);
+      } catch (err) {
+        alert('保存失败: ' + err.message);
+        btn.textContent = '💾 存入相册';
+      }
+    });
+  }
+
+  // --- Auth & History Dialog Event Listeners ---
+  bindAuthAndHistoryEvents() {
+    const loginModal = document.getElementById('loginModal');
+    const profileModal = document.getElementById('profileModal');
+    const historyModal = document.getElementById('historyModal');
+
+    // 1. Top bar Auth button click
+    document.getElementById('btnUserAuth').addEventListener('click', () => {
+      if (isLoggedIn()) {
+        const user = getCurrentUser();
+        document.getElementById('profileNickname').textContent = user.nickname || '摄影师';
+        document.getElementById('profilePhone').textContent = user.phone || '未绑定';
+        document.getElementById('profileAvatar').textContent = user.nickname?.slice(0, 1) || '👤';
+        profileModal.showModal();
+      } else {
+        loginModal.showModal();
+      }
+    });
+
+    document.getElementById('btnCloseLoginModal').addEventListener('click', () => loginModal.close());
+    document.getElementById('btnCloseProfileModal').addEventListener('click', () => profileModal.close());
+    document.getElementById('btnCloseHistoryModal').addEventListener('click', () => historyModal.close());
+
+    // 2. Send SMS Code
+    const btnSendSMS = document.getElementById('btnSendSMS');
+    btnSendSMS.addEventListener('click', async () => {
+      const phone = document.getElementById('inputPhone').value.trim();
+      if (!phone || phone.length < 11) {
+        alert('请输入有效的11位手机号');
+        return;
+      }
+      btnSendSMS.disabled = true;
+      try {
+        await sendSMS(phone);
+        let seconds = 60;
+        btnSendSMS.textContent = `${seconds}s`;
+        const timer = setInterval(() => {
+          seconds--;
+          if (seconds <= 0) {
+            clearInterval(timer);
+            btnSendSMS.disabled = false;
+            btnSendSMS.textContent = '获取验证码';
+          } else {
+            btnSendSMS.textContent = `${seconds}s`;
+          }
+        }, 1000);
+      } catch (err) {
+        alert(err.message);
+        btnSendSMS.disabled = false;
+        btnSendSMS.textContent = '获取验证码';
+      }
+    });
+
+    // 3. Submit Login
+    document.getElementById('btnSubmitLogin').addEventListener('click', async () => {
+      const phone = document.getElementById('inputPhone').value.trim();
+      const code = document.getElementById('inputSMSCode').value.trim();
+      if (!phone || !code) {
+        alert('手机号和验证码不能为空');
+        return;
+      }
+
+      const submitBtn = document.getElementById('btnSubmitLogin');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '正在登录...';
+
+      try {
+        const { user } = await loginBySMS(phone, code);
+        this.updateUserAuthUI();
+        loginModal.close();
+        alert(`欢迎回来，${user.nickname}！云端相册与历史记录已同步。`);
+      } catch (err) {
+        alert('登录失败: ' + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '登 录';
+      }
+    });
+
+    // 4. Logout
+    document.getElementById('btnLogout').addEventListener('click', () => {
+      logout();
+      this.updateUserAuthUI();
+      profileModal.close();
+      alert('已退出当前账号');
+    });
+
+    // 5. Open History Gallery
+    document.getElementById('btnOpenHistory').addEventListener('click', () => {
+      this.renderHistoryList();
+      historyModal.showModal();
+    });
+  }
+
+  // --- Save Current Artwork to History ---
+  async saveCurrentArtworkToHistory(customTitle = '') {
+    if (!this.simulator.canvas) return;
+
+    // 1. Get 400x300 preview DataURL
+    const previewDataUrl = this.simulator.canvas.toDataURL('image/png');
+
+    // 2. Base64 30KB bitmap
+    let bitmapB64 = '';
+    if (this.state.packed30kPayload) {
+      let binary = '';
+      const len = this.state.packed30kPayload.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(this.state.packed30kPayload[i]);
+      }
+      bitmapB64 = btoa(binary);
+    }
+
+    // 3. Serialize all transform and tonal parameters
+    const params = {
+      rotation: this.state.rotation,
+      flipH: this.state.flipH,
+      zoom: this.state.zoom,
+      panX: this.state.panX,
+      panY: this.state.panY,
+      brightness: this.state.brightness,
+      contrast: this.state.contrast,
+      saturation: this.state.saturation,
+      warmth: this.state.warmth,
+      sharpness: this.state.sharpness,
+      redDamper: this.state.redDamper,
+      imageSrc: this.state.imageSrc
+    };
+
+    const presetName = this.state.selectedPreset?.name || '经典微调';
+    const title = customTitle || `${presetName} 创作照片`;
+
+    return await createArtwork({
+      title,
+      subtitle: `${presetName.toUpperCase()} · 400x300`,
+      original_image_url: this.state.imageSrc,
+      rendered_preview_url: previewDataUrl,
+      bitmap_base64: bitmapB64,
+      filter_id: this.state.selectedPreset?.id || 'polaroid_600',
+      frame_id: this.state.frameTemplate,
+      dither_method: this.state.ditherAlgorithm,
+      params_json: JSON.stringify(params),
+      target_device_id: 'dev_eink_401'
+    });
+  }
+
+  // --- Render History Gallery Modal Content ---
+  async renderHistoryList() {
+    const container = document.getElementById('historyListContainer');
+    const countBadge = document.getElementById('historyCountBadge');
+    container.innerHTML = '<div style="color: var(--color-text-secondary); text-align: center; padding: 30px;">加载历史照片记录...</div>';
+
+    const { artworks } = await fetchMyArtworks();
+    countBadge.textContent = `${artworks.length} 张`;
+    container.innerHTML = '';
+
+    if (!artworks || artworks.length === 0) {
+      container.innerHTML = `
+        <div class="history-empty-state">
+          <div class="history-empty-icon">🖼️</div>
+          <div style="font-size: 15px; font-weight: 700; color: #FFFFFF;">暂无历史照片记录</div>
+          <p style="font-size: 12px; max-width: 260px; line-height: 1.5;">
+            在暗室完成调色后点击「💾 存入相册」或烧录至相框，即可随时在这里查阅和一键载入恢复！
+          </p>
+        </div>
+      `;
+      return;
+    }
+
+    artworks.forEach((art) => {
+      const card = document.createElement('div');
+      card.className = 'history-item-card';
+
+      const thumbUrl = art.rendered_preview_url || art.original_image_url || 'assets/samples/sunset.png';
+      const dateStr = art.created_at ? new Date(art.created_at).toLocaleDateString() : '近日';
+      const filterTag = (art.filter_id || 'RNI FILM').toUpperCase();
+
+      card.innerHTML = `
+        <div class="history-item-thumb">
+          <img src="${thumbUrl}" alt="${art.title}">
+        </div>
+        <div class="history-item-info">
+          <span class="history-item-title">${art.title || '无标题作品'}</span>
+          <div class="history-item-meta">
+            <span class="badge badge-film">${filterTag}</span>
+            <span>📅 ${dateStr}</span>
+            ${art.flashed_count > 0 ? `<span style="color: var(--color-accent-primary);">⚡ 已刷 ${art.flashed_count} 次</span>` : ''}
+          </div>
+        </div>
+        <div class="history-item-actions">
+          <button class="history-action-btn primary btn-restore" title="恢复当时的图片与调色参数">
+            载入暗室
+          </button>
+          <button class="history-action-btn delete btn-delete" title="删除该记录">
+            删除
+          </button>
+        </div>
+      `;
+
+      // 1. Restore to Darkroom Studio
+      card.querySelector('.btn-restore').addEventListener('click', async () => {
+        document.getElementById('historyModal').close();
+        await this.restoreArtwork(art);
+      });
+
+      // 2. Delete Artwork
+      card.querySelector('.btn-delete').addEventListener('click', async () => {
+        if (confirm(`确定要删除历史照片「${art.title}」吗？`)) {
+          await deleteArtwork(art.id);
+          this.renderHistoryList();
+        }
+      });
+
+      container.appendChild(card);
+    });
+  }
+
+  // --- Restore Artwork into Studio ---
+  async restoreArtwork(art) {
+    console.log('Restoring artwork:', art);
+
+    // 1. Restore Frame Template & Dither algorithm
+    if (art.frame_id) {
+      this.state.frameTemplate = art.frame_id;
+      document.getElementById('btnFramePolaroid').classList.toggle('active', art.frame_id === 'polaroid');
+      document.getElementById('btnFrameFull').classList.toggle('active', art.frame_id === 'full');
+    }
+
+    if (art.dither_method) {
+      this.state.ditherAlgorithm = art.dither_method;
+      document.getElementById('btnAtkinson').classList.toggle('active', art.dither_method === 'atkinson');
+      document.getElementById('btnFloyd').classList.toggle('active', art.dither_method === 'floyd');
+    }
+
+    // 2. Restore Filter Preset
+    if (art.filter_id && this.state.presets) {
+      const match = this.state.presets.find(p => p.id === art.filter_id);
+      if (match) {
+        this.state.selectedPreset = match;
+        document.querySelectorAll('.film-card').forEach(c => {
+          c.classList.toggle('active', c.dataset.id === match.id);
+        });
+      }
+    }
+
+    // 3. Restore Parameters from params_json
+    let loadedImageSrc = art.original_image_url || art.rendered_preview_url || 'assets/samples/sunset.png';
+    if (art.params_json) {
+      try {
+        const p = JSON.parse(art.params_json);
+        if (p.rotation !== undefined) this.state.rotation = p.rotation;
+        if (p.flipH !== undefined) {
+          this.state.flipH = p.flipH;
+          document.getElementById('btnFlipH').classList.toggle('active', p.flipH);
+        }
+        if (p.zoom !== undefined) this.state.zoom = p.zoom;
+        if (p.panX !== undefined) this.state.panX = p.panX;
+        if (p.panY !== undefined) this.state.panY = p.panY;
+        if (p.imageSrc) loadedImageSrc = p.imageSrc;
+
+        // Tones
+        if (p.brightness !== undefined) {
+          this.state.brightness = p.brightness;
+          document.getElementById('sliderBrightness').value = p.brightness;
+          document.getElementById('valBrightness').textContent = p.brightness;
+        }
+        if (p.contrast !== undefined) {
+          this.state.contrast = p.contrast;
+          document.getElementById('sliderContrast').value = p.contrast;
+          document.getElementById('valContrast').textContent = p.contrast.toFixed(2);
+        }
+        if (p.saturation !== undefined) {
+          this.state.saturation = p.saturation;
+          document.getElementById('sliderSaturation').value = p.saturation;
+          document.getElementById('valSaturation').textContent = p.saturation.toFixed(2);
+        }
+        if (p.warmth !== undefined) {
+          this.state.warmth = p.warmth;
+          document.getElementById('sliderWarmth').value = p.warmth;
+          document.getElementById('valWarmth').textContent = p.warmth;
+        }
+        if (p.sharpness !== undefined) {
+          this.state.sharpness = p.sharpness;
+          const sPct = Math.round(p.sharpness * 100);
+          document.getElementById('sliderSharpness').value = sPct;
+          document.getElementById('valSharpness').textContent = `${sPct}%`;
+        }
+        if (p.redDamper !== undefined) {
+          this.state.redDamper = p.redDamper;
+          document.getElementById('sliderRedDamper').value = p.redDamper;
+          document.getElementById('valRedDamper').textContent = p.redDamper.toFixed(2);
+        }
+      } catch (e) {
+        console.warn('Failed to parse artwork params_json:', e);
+      }
+    }
+
+    // 4. Load Image and Render
+    this.state.imageSrc = loadedImageSrc;
+    await this.loadImage(loadedImageSrc);
   }
 
   bindSlider(sliderId, valId, setter, formatter) {
@@ -431,13 +803,8 @@ class EinkApp {
     return ditherFloydSteinberg(pixels, this.state.redDamper);
   }
 
-  /**
-   * Render Transformed Image inside Photo Box with Pan, Zoom, Rotation & Flip
-   */
   renderTransformedImage(ctx, img, box) {
     ctx.save();
-
-    // Clip to bounding box
     ctx.beginPath();
     ctx.rect(box.x, box.y, box.w, box.h);
     ctx.clip();
@@ -445,12 +812,10 @@ class EinkApp {
     const imgW = img.naturalWidth || img.width;
     const imgH = img.naturalHeight || img.height;
 
-    // Check if swap width/height due to 90 or 270 degree rotation
     const isRotated90 = (this.state.rotation === 90 || this.state.rotation === 270);
     const effectiveW = isRotated90 ? imgH : imgW;
     const effectiveH = isRotated90 ? imgW : imgH;
 
-    // Cover scale factor
     const scale = Math.max(box.w / effectiveW, box.h / effectiveH) * this.state.zoom;
 
     const centerX = box.x + box.w / 2 + this.state.panX;

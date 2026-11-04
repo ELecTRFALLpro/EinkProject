@@ -14,13 +14,26 @@ const (
 
 // User 用户表
 type User struct {
+	ID          uint64     `gorm:"primaryKey;autoIncrement" json:"id"`
+	Phone       string     `gorm:"size:32;uniqueIndex;not null" json:"phone"`
+	Nickname    string     `gorm:"size:64" json:"nickname"`
+	AvatarURL   string     `gorm:"size:255" json:"avatar_url"`
+	Status      string     `gorm:"size:16;default:'active'" json:"status"`
+	LastLoginAt *time.Time `json:"last_login_at"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+}
+
+// SMSVerificationCode 短信验证码表（持久化与审计）
+type SMSVerificationCode struct {
 	ID        uint64    `gorm:"primaryKey;autoIncrement" json:"id"`
-	Phone     string    `gorm:"size:32;uniqueIndex;not null" json:"phone"`
-	Nickname  string    `gorm:"size:64" json:"nickname"`
-	AvatarURL string    `gorm:"size:255" json:"avatar_url"`
-	Status    string    `gorm:"size:16;default:'active'" json:"status"`
+	Phone     string    `gorm:"size:32;index;not null" json:"phone"`
+	Code      string    `gorm:"size:16;not null" json:"-"`
+	Purpose   string    `gorm:"size:32;default:'login'" json:"purpose"` // login, bind, reset
+	Status    string    `gorm:"size:16;default:'pending'" json:"status"` // pending, used, expired
+	IP        string    `gorm:"size:64" json:"ip"`
+	ExpiresAt time.Time `json:"expires_at"`
 	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // DisplayProfile 屏幕参数配置模型
@@ -148,6 +161,7 @@ type Artwork struct {
 	FilterID           string     `gorm:"size:64" json:"filter_id"`
 	FrameID            string     `gorm:"size:64" json:"frame_id"`
 	DitherMethod       string     `gorm:"size:32" json:"dither_method"`
+	ParamsJSON         string     `gorm:"type:text" json:"params_json"` // 记录旋转/平移/缩放与六大暗室影调参数
 	TargetDeviceID     string     `gorm:"size:64" json:"target_device_id"`
 	FlashedCount       int        `gorm:"default:0" json:"flashed_count"`
 	LastFlashedAt      *time.Time `json:"last_flashed_at"`
