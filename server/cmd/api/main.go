@@ -77,6 +77,9 @@ func main() {
 	if err := presetSvc.InitDefaults(); err != nil {
 		log.Fatalf("Failed to init default presets: %v", err)
 	}
+	if err := deviceSvc.InitDefaults(); err != nil {
+		log.Printf("Warning: failed to init demo devices: %v", err)
+	}
 
 	// 5. 初始化 HTTP Handlers
 	authHandler := handler.NewAuthHandler(authSvc)
@@ -162,6 +165,8 @@ func main() {
 			works.POST("", artworkHandler.CreateArtwork)
 			works.GET("", artworkHandler.GetMyArtworks)
 			works.GET("/:id", artworkHandler.GetArtworkDetail)
+			works.PATCH("/:id", artworkHandler.UpdateArtwork)
+			works.POST("/:id/flash", artworkHandler.RecordFlash)
 			works.DELETE("/:id", artworkHandler.DeleteArtwork)
 		}
 

@@ -136,3 +136,27 @@ func (s *ArtworkService) RecordFlashed(userID uint64, artID, deviceID string) er
 			"target_device_id": deviceID,
 		}).Error
 }
+
+func (s *ArtworkService) UpdateArtwork(userID uint64, artID, title, subtitle string) (*model.Artwork, error) {
+	var art model.Artwork
+	if err := s.db.Where("id = ? AND user_id = ?", artID, userID).First(&art).Error; err != nil {
+		return nil, errors.New("artwork not found or permission denied")
+	}
+
+	updates := map[string]interface{}{
+		"updated_at": time.Now(),
+	}
+	if title != "" {
+		updates["title"] = title
+		art.Title = title
+	}
+	if subtitle != "" {
+		updates["subtitle"] = subtitle
+		art.Subtitle = subtitle
+	}
+
+	if err := s.db.Model(&art).Updates(updates).Error; err != nil {
+		return nil, err
+	}
+	return &art, nil
+}

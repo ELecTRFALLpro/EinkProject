@@ -252,3 +252,68 @@ export function ditherFloydSteinberg(sourceImageData, redDamper = 1.15) {
     stats
   };
 }
+
+/**
+ * Ordered Bayer 4x4 Matrix Dithering Algorithm
+ * Produces structured retro halftone crosshatch patterns with zero error-diffusion bleeding.
+ */
+const BAYER_4X4 = [
+  [ 0,  8,  2, 10],
+  [12,  4, 14,  6],
+  [ 3, 11,  1,  9],
+  [15,  7, 13,  5]
+];
+
+export function ditherOrderedBayer(sourceImageData, redDamper = 1.15) {
+  const width = sourceImageData.width;
+  const height = sourceImageData.height;
+  const src = sourceImageData.data;
+
+  const outIndices = new Uint8Array(width * height);
+  const outImageData = new ImageData(width, height);
+  const out = outImageData.data;
+
+  const counts = [0, 0, 0, 0];
+  const spread = 38; // Threshold modulation amplitude
+
+  for (let y = 0; y < height; y++) {
+    const bayerRow = BAYER_4X4[y & 3];
+    for (let x = 0; x < width; x++) {
+      const idx = y * width + x;
+      const offset = (bayerRow[x & 3] / 16 - 0.5) * spread;
+
+      const r = Math.min(255, Math.max(0, src[idx * 4] + offset));
+      const g = Math.min(255, Math.max(0, src[idx * 4 + 1] + offset));
+      const b = Math.min(255, Math.max(0, src[idx * 4 + 2] + offset));
+
+      const colorIdx = getClosestPaletteColor(r, g, b, redDamper);
+      outIndices[idx] = colorIdx;
+      counts[colorIdx]++;
+
+      const chosenRGB = PALETTE[colorIdx].rgb;
+      const outOffset = idx * 4;
+      out[outOffset] = chosenRGB[0];
+      out[outOffset + 1] = chosenRGB[1];
+      out[outOffset + 2] = chosenRGB[2];
+      out[outOffset + 3] = 255;
+    }
+  }
+
+  const totalPixels = width * height;
+  const stats = {
+    total: totalPixels,
+    counts,
+    percentages: {
+      black: ((counts[0] / totalPixels) * 100).toFixed(1) + '%',
+      white: ((counts[1] / totalPixels) * 100).toFixed(1) + '%',
+      yellow: ((counts[2] / totalPixels) * 100).toFixed(1) + '%',
+      red: ((counts[3] / totalPixels) * 100).toFixed(1) + '%'
+    }
+  };
+
+  return {
+    indices: outIndices,
+    imageData: outImageData,
+    stats
+  };
+}

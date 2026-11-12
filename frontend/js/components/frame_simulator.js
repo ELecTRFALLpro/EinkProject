@@ -1,6 +1,6 @@
 /**
  * Photorealistic 400x300 E-Ink Hardware Display Simulator
- * Enhanced with iOS Touch Gestures (Drag Pan & Pinch Zoom)
+ * Enhanced with iOS Touch Gestures (Drag Pan, Pinch Zoom, Double-Tap Zoom/Reset)
  */
 
 export class FrameSimulator {
@@ -11,7 +11,10 @@ export class FrameSimulator {
       height: 300,
       paperTexture: true,
       showSplit: false,
-      onGestureChange: null // callback (panX, panY, zoom)
+      onPan: null,
+      onZoomDelta: null,
+      onDoubleTap: null,
+      onResetTransform: null
     }, options);
 
     this.currentImageData = null;
@@ -30,7 +33,10 @@ export class FrameSimulator {
             <canvas id="splitCanvas" width="400" height="300" class="split-canvas" style="display: none;"></canvas>
             <div class="paper-grain-overlay" id="paperGrain"></div>
             <div class="refresh-flash-overlay" id="refreshOverlay"></div>
-            <div class="gesture-hint" id="gestureHint">按住可自由平移构图</div>
+            <button type="button" class="zoom-reset-badge" id="zoomResetBadge" style="display: none;" title="点击一键复位构图">
+              🔍 1.0x · 复位
+            </button>
+            <div class="gesture-hint" id="gestureHint">单指拖拽平移 · 双指缩放 · 双击放大/复位</div>
             
             <!-- Split View Handle -->
             <div class="split-handle" id="splitHandle" style="display: none;">
@@ -58,6 +64,7 @@ export class FrameSimulator {
     this.splitHandle = this.container.querySelector('#splitHandle');
     this.screenViewport = this.container.querySelector('#screenViewport');
     this.gestureHint = this.container.querySelector('#gestureHint');
+    this.zoomResetBadge = this.container.querySelector('#zoomResetBadge');
 
     this.bindGestures();
   }
@@ -66,20 +73,34 @@ export class FrameSimulator {
     let isPanning = false;
     let startX = 0;
     let startY = 0;
+    let movedDist = 0;
     let initialPinchDist = 0;
+    let lastTapTime = 0;
 
     const viewport = this.screenViewport;
 
+    // Reset button inside viewport
+    this.zoomResetBadge.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+    });
+    this.zoomResetBadge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (typeof this.options.onResetTransform === 'function') {
+        this.options.onResetTransform();
+      }
+    });
+
     // Pointer events for smooth touch & mouse dragging
     viewport.addEventListener('pointerdown', (e) => {
-      // If split handle is visible and clicked nearby, ignore pan
-      if (this.options.showSplit && Math.abs(e.clientX - this.splitHandle.getBoundingClientRect().left) < 30) {
+      if (e.target === this.zoomResetBadge) return;
+      if (this.options.showSplit && Math.abs(e.clientX - this.splitHandle.getBoundingClientRect().left) < 28) {
         return;
       }
       isPanning = true;
+      movedDist = 0;
       startX = e.clientX;
       startY = e.clientY;
-      viewport.setPointerCapture(e.pointerId);
+      try { viewport.setPointerCapture(e.pointerId); } catch (_) {}
       this.gestureHint.style.opacity = '0';
     });
 
@@ -87,6 +108,7 @@ export class FrameSimulator {
       if (!isPanning) return;
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
+      movedDist += Math.hypot(dx, dy);
       startX = e.clientX;
       startY = e.clientY;
 
@@ -99,6 +121,19 @@ export class FrameSimulator {
       if (isPanning) {
         isPanning = false;
         try { viewport.releasePointerCapture(e.pointerId); } catch (_) {}
+
+        // Detect clean double-tap (minimal drag movement)
+        if (movedDist < 8 && e.type === 'pointerup') {
+          const now = Date.now();
+          if (now - lastTapTime < 280) {
+            if (typeof this.options.onDoubleTap === 'function') {
+              this.options.onDoubleTap();
+            }
+            lastTapTime = 0;
+          } else {
+            lastTapTime = now;
+          }
+        }
       }
     };
 
@@ -133,7 +168,7 @@ export class FrameSimulator {
         );
         const ratio = currentDist / initialPinchDist;
         initialPinchDist = currentDist;
-        const zoomDelta = (ratio - 1) * 0.8;
+        const zoomDelta = (ratio - 1) * 0.85;
         if (typeof this.options.onZoomDelta === 'function') {
           this.options.onZoomDelta(zoomDelta);
         }
@@ -156,6 +191,17 @@ export class FrameSimulator {
     });
     window.addEventListener('pointermove', onSplitMove);
     window.addEventListener('pointerup', () => { draggingSplit = false; });
+  }
+
+  updateTransformBadge({ zoom = 1.0, panX = 0, panY = 0, rotation = 0, flipH = false }) {
+    const isModified = Math.abs(zoom - 1.0) > 0.01 || Math.abs(panX) > 2 || Math.abs(panY) > 2 || rotation !== 0 || flipH;
+    if (isModified) {
+      this.zoomResetBadge.style.display = 'inline-flex';
+      const rotTxt = rotation !== 0 ? ` · ${rotation}°` : '';
+      this.zoomResetBadge.textContent = `🔍 ${zoom.toFixed(1)}x${rotTxt} · 复位`;
+    } else {
+      this.zoomResetBadge.style.display = 'none';
+    }
   }
 
   toggleSplit(enable) {

@@ -1,6 +1,6 @@
 /**
  * iOS Mobile App Experience for E-Ink Photo Frame
- * Darkroom Studio, Gesture Transform, Touch Sliders & NFC Dock
+ * Darkroom Studio, Smooth Scroll-Snap Carousels, Gesture Transform, Touch Sliders & NFC Dock
  */
 
 /* 1. App Shell */
@@ -9,12 +9,14 @@
   flex-direction: column;
   width: 100vw;
   height: 100dvh;
-  max-width: 480px; /* Centered on desktop, full-width on mobile */
+  max-width: 480px;
   margin: 0 auto;
   background-color: var(--color-bg-base);
   position: relative;
   overflow: hidden;
-  box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.85);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 @media (min-width: 481px) {
@@ -25,10 +27,44 @@
     background: radial-gradient(circle at 50% 20%, #1e1e1e 0%, #0a0a0a 100%);
   }
   .ios-app-container {
-    height: 94dvh;
+    height: 95dvh;
     border-radius: 40px;
     border: 3px solid rgba(255, 255, 255, 0.12);
   }
+}
+
+/* Global Focus Ring for Keyboard Accessibility (WCAG 1.4.11) */
+:where(button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+}
+
+/* Dynamic Island Floating Toast */
+.ios-toast {
+  position: absolute;
+  top: calc(var(--sat) + 12px);
+  left: 50%;
+  transform: translate(-50%, -24px) scale(0.92);
+  background: rgba(24, 24, 24, 0.96);
+  border: 1px solid rgba(30, 215, 96, 0.45);
+  color: #FFFFFF;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0;
+  white-space: nowrap;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+}
+
+.ios-toast.visible {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
 }
 
 /* 2. iOS Top Navigation Bar */
@@ -36,19 +72,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(var(--sat) + 8px) 16px 10px 16px;
+  padding: calc(var(--sat) + 6px) 12px 8px 12px;
   background: rgba(18, 18, 18, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--color-border-subtle);
   z-index: 50;
   flex-shrink: 0;
+  gap: 6px;
 }
 
 .nav-left, .nav-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .ios-icon-btn {
@@ -56,15 +93,16 @@
   border: 1px solid var(--color-border-subtle);
   color: var(--color-text-primary);
   border-radius: var(--radius-pill);
-  height: 36px;
-  padding: 0 12px;
+  height: 34px;
+  padding: 0 10px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 4px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.1s, background 0.15s;
+  touch-action: manipulation;
+  transition: transform 0.12s ease-out, background 0.15s ease-out;
 }
 
 .ios-icon-btn:active {
@@ -75,53 +113,76 @@
 .device-badge-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   background: rgba(30, 215, 96, 0.12);
-  border: 1px solid rgba(30, 215, 96, 0.25);
+  border: 1px solid rgba(30, 215, 96, 0.28);
   border-radius: var(--radius-pill);
-  padding: 4px 10px;
+  padding: 5px 10px;
   font-size: 11px;
   font-weight: 700;
   color: var(--color-accent-primary);
+  cursor: pointer;
+  touch-action: manipulation;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: transform 0.12s ease-out, background 0.15s;
+}
+
+.device-badge-pill:active {
+  transform: scale(0.95);
+  background: rgba(30, 215, 96, 0.22);
 }
 
 .device-dot-pulse {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   background: var(--color-accent-primary);
   border-radius: 50%;
   box-shadow: 0 0 8px var(--color-accent-primary);
+  flex-shrink: 0;
 }
 
 /* 3. Main Stage: Interactive Frame & Gesture Area */
 .ios-viewport-stage {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 12px 16px 8px 16px;
+  padding: 8px 14px 4px 14px;
   overflow: hidden;
   position: relative;
 }
 
+.frame-sim-host {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+}
+
 /* E-Ink Frame Mockup */
 .frame-bezel {
-  background: linear-gradient(145deg, #1f1f1f 0%, #101010 100%);
+  background: linear-gradient(145deg, #222222 0%, #101010 100%);
   border-radius: var(--radius-bezel);
-  padding: 14px 16px 20px 16px;
+  padding: 10px 12px 14px 12px;
   box-shadow: var(--shadow-bezel);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   width: 100%;
-  max-width: 375px;
+  max-width: min(360px, 84vw);
   position: relative;
-  touch-action: none; /* Allows pointer drag & pinch */
+  touch-action: none;
 }
 
 .frame-inner-mat {
   background: #0d0d0d;
   border-radius: 8px;
-  padding: 8px;
+  padding: 6px;
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.9);
   display: flex;
   flex-direction: column;
@@ -169,19 +230,44 @@
   mix-blend-mode: multiply;
 }
 
+/* Live Zoom & Reset Badge */
+.zoom-reset-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(18, 18, 18, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(30, 215, 96, 0.5);
+  color: var(--color-accent-primary);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  z-index: 15;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.zoom-reset-badge:active {
+  transform: scale(0.94);
+}
+
 /* Gesture Pan/Zoom Touch Helper Cue */
 .gesture-hint {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
-  background: rgba(0, 0, 0, 0.6);
+  bottom: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.62);
   backdrop-filter: blur(8px);
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.78);
   font-size: 10px;
   padding: 3px 8px;
   border-radius: var(--radius-pill);
   pointer-events: none;
-  opacity: 0.8;
+  opacity: 0.85;
   transition: opacity 0.3s;
 }
 
@@ -255,8 +341,8 @@
 }
 
 .split-knob {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   background: var(--color-accent-primary);
   color: #000;
   border-radius: 50%;
@@ -268,7 +354,7 @@
 }
 
 .frame-engraving {
-  margin-top: 8px;
+  margin-top: 6px;
   font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 600;
@@ -276,14 +362,23 @@
   letter-spacing: 0.12em;
 }
 
-/* Quick Transform Control Bar */
+/* Horizontally Swipeable Quick Transform Control Bar */
 .quick-transform-bar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 6px;
+  margin-top: 8px;
   width: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 2px;
+  flex-shrink: 0;
+}
+
+.quick-transform-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .transform-chip {
@@ -291,14 +386,18 @@
   border: 1px solid var(--color-border-subtle);
   color: var(--color-text-secondary);
   border-radius: var(--radius-pill);
-  padding: 6px 12px;
-  font-size: 12px;
+  padding: 5px 11px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  transition: all 0.12s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  touch-action: manipulation;
+  transition: transform 0.12s ease-out, background 0.15s, border-color 0.15s;
 }
 
 .transform-chip:active {
@@ -313,13 +412,19 @@
   border-color: var(--color-accent-primary);
 }
 
+.transform-chip.chip-accent {
+  color: var(--color-accent-primary);
+  border-color: rgba(30, 215, 96, 0.35);
+  margin-left: auto;
+}
+
 /* 4. iOS Segmented Tab Navigation */
 .ios-segmented-tabs {
   display: flex;
   background: rgba(255, 255, 255, 0.06);
   padding: 3px;
   border-radius: var(--radius-pill);
-  margin: 4px 16px 8px 16px;
+  margin: 2px 14px 6px 14px;
   border: 1px solid var(--color-border-subtle);
   flex-shrink: 0;
 }
@@ -330,19 +435,20 @@
   border: none;
   color: var(--color-text-secondary);
   font-family: var(--font-main);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 8px 4px;
+  padding: 7px 4px;
   border-radius: var(--radius-pill);
   cursor: pointer;
   text-align: center;
+  touch-action: manipulation;
   transition: all 0.15s ease;
 }
 
 .tab-btn.active {
-  background: #242424;
+  background: #262626;
   color: var(--color-text-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
 }
 
 /* 5. Tab Content Drawer */
@@ -351,10 +457,12 @@
   border-top: 1px solid var(--color-border-subtle);
   border-top-left-radius: var(--radius-modal);
   border-top-right-radius: var(--radius-modal);
-  padding: 14px 16px 10px 16px;
-  height: 220px;
+  padding: 10px 14px 8px 14px;
+  height: clamp(195px, 28dvh, 225px);
   overflow-y: auto;
+  overflow-x: hidden;
   flex-shrink: 0;
+  contain: layout style;
 }
 
 .tab-panel {
@@ -364,30 +472,86 @@
 .tab-panel.active {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  height: 100%;
+  justify-content: space-between;
 }
 
-/* Tab 1: Film Presets Shelf */
+/* Tab 1: Film Category Filter Pills & Snap Carousel */
+.film-category-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  flex-shrink: 0;
+}
+
+.film-category-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.cat-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  scroll-snap-align: start;
+  transition: all 0.15s ease;
+}
+
+.cat-chip.active {
+  background: var(--color-accent-primary);
+  color: #000000;
+  border-color: var(--color-accent-primary);
+  font-weight: 700;
+}
+
 .film-shelf-scroll {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   overflow-x: auto;
-  padding: 4px 0 10px 0;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding: 2px 2px 4px 2px;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  flex: 1;
+  align-items: center;
+}
+
+.film-shelf-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .film-shelf-scroll {
+    scroll-behavior: smooth;
+  }
 }
 
 .film-card {
-  width: 124px;
+  flex: 0 0 116px;
+  scroll-snap-align: start;
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
-  padding: 8px;
+  padding: 7px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   cursor: pointer;
-  flex-shrink: 0;
-  transition: transform 0.15s, border-color 0.15s;
+  touch-action: manipulation;
+  transition: transform 0.15s ease-out, border-color 0.15s ease-out, box-shadow 0.15s ease-out;
   position: relative;
 }
 
@@ -398,12 +562,12 @@
 .film-card.active {
   border: 2px solid var(--color-accent-primary);
   background: #202020;
-  box-shadow: 0 4px 16px rgba(30, 215, 96, 0.25);
+  box-shadow: 0 4px 14px rgba(30, 215, 96, 0.25);
 }
 
 .film-card-thumb {
   width: 100%;
-  height: 68px;
+  height: 64px;
   border-radius: 6px;
   overflow: hidden;
   background: #000;
@@ -422,7 +586,7 @@
 }
 
 .film-card-name {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--color-text-primary);
   white-space: nowrap;
@@ -436,8 +600,8 @@
 
 .film-card-active-check {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 5px;
+  right: 5px;
   width: 18px;
   height: 18px;
   background: var(--color-accent-primary);
@@ -454,25 +618,26 @@
   display: flex;
 }
 
-/* Tab 2: Darkroom Sliders */
+/* Tab 2: Darkroom Sliders (Compact 2-Column Grid with Spotify Progress Track) */
 .sliders-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 8px 14px;
 }
 
 .slider-unit {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .slider-header-row {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--color-text-secondary);
+  cursor: pointer;
 }
 
 .slider-val-num {
@@ -482,27 +647,35 @@
 
 input[type="range"] {
   -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   height: 6px;
-  background: #333333;
+  background: linear-gradient(
+    to right,
+    var(--color-accent-primary) 0%,
+    var(--color-accent-primary) var(--slider-pct, 50%),
+    #333333 var(--slider-pct, 50%),
+    #333333 100%
+  );
   border-radius: 3px;
   outline: none;
-  margin: 6px 0;
+  margin: 5px 0;
+  touch-action: pan-y;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 22px; /* Large touch target for iOS thumb */
-  height: 22px;
+  width: 20px;
+  height: 20px;
   background: #FFFFFF;
   border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.65);
   cursor: pointer;
-  transition: transform 0.1s;
+  transition: transform 0.1s ease-out, background 0.12s;
 }
 
 input[type="range"]:active::-webkit-slider-thumb {
-  transform: scale(1.15);
+  transform: scale(1.2);
   background: var(--color-accent-primary);
 }
 
@@ -510,26 +683,57 @@ input[type="range"]:active::-webkit-slider-thumb {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
-/* Tab 3: Framing & Histogram */
-.framing-row {
+.tone-hint-txt {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+}
+
+.btn-reset-tone {
+  min-height: 28px;
+  padding: 3px 12px;
+  font-size: 11px;
+}
+
+/* Tab 3: Framing, Custom Subtitle, Dithering & Histogram */
+.framing-stack {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 7px;
+  height: 100%;
+  justify-content: space-between;
+}
+
+.framing-row {
+  display: grid;
+  gap: 6px;
+}
+
+.framing-row.four-cols {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.framing-row.three-cols {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .framing-btn {
-  flex: 1;
   background: #242424;
   border: 1px solid var(--color-border-subtle);
   color: var(--color-text-secondary);
   border-radius: var(--radius-inner);
-  padding: 10px;
-  font-size: 12px;
+  padding: 7px 4px;
+  font-size: 11px;
   font-weight: 600;
   text-align: center;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  touch-action: manipulation;
+  transition: all 0.12s;
 }
 
 .framing-btn.active {
@@ -538,27 +742,65 @@ input[type="range"]:active::-webkit-slider-thumb {
   border-color: var(--color-accent-primary);
 }
 
+.caption-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #101010;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-inner);
+  padding: 4px 10px;
+  height: 32px;
+}
+
+.caption-edit-row:focus-within {
+  border-color: var(--color-accent-primary);
+}
+
+.caption-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.caption-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #FFFFFF;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
 .histogram-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 
 .hist-chip {
   background: #111111;
   border-radius: var(--radius-inner);
-  padding: 6px 4px;
+  padding: 5px 6px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  gap: 5px;
   border: 1px solid var(--color-border-subtle);
 }
 
 .hist-swatch-sm {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.hist-label {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
 }
 
 .hist-num {
@@ -571,8 +813,8 @@ input[type="range"]:active::-webkit-slider-thumb {
 .ios-bottom-dock {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px calc(var(--sab) + 12px) 16px;
+  gap: 10px;
+  padding: 8px 14px calc(var(--sab) + 10px) 14px;
   background: #111111;
   border-top: 1px solid var(--color-border-subtle);
   flex-shrink: 0;
@@ -583,13 +825,15 @@ input[type="range"]:active::-webkit-slider-thumb {
   background: rgba(255, 255, 255, 0.08);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border-subtle);
-  min-width: 90px;
+  min-width: 96px;
+  height: 44px;
+  font-size: 13px;
 }
 
 .btn-nfc-main {
   flex: 1;
-  height: 48px;
-  font-size: 15px;
+  height: 44px;
+  font-size: 14px;
 }
 
 /* 7. NFC Flash Modal (Native <dialog>) */
@@ -613,22 +857,22 @@ dialog#nfcModal::backdrop {
 }
 
 .nfc-modal-content {
-  padding: 24px 20px;
+  padding: 22px 18px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   position: relative;
 }
 
 .modal-close-btn {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 14px;
+  right: 14px;
   background: rgba(255, 255, 255, 0.1);
   border: none;
   color: var(--color-text-primary);
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
@@ -642,7 +886,7 @@ dialog#nfcModal::backdrop {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .nfc-pulse-svg {
@@ -671,9 +915,8 @@ dialog#nfcModal::backdrop {
 }
 
 .nfc-title {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
-  letter-spacing: -0.01em;
 }
 
 .nfc-subtitle {
@@ -685,10 +928,10 @@ dialog#nfcModal::backdrop {
   background: #101010;
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-inner);
-  padding: 12px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
   font-size: 12px;
 }
 
@@ -705,6 +948,7 @@ dialog#nfcModal::backdrop {
 .telemetry-value {
   font-family: var(--font-mono);
   font-weight: 600;
+  font-size: 11px;
 }
 
 .nfc-progress-container {
@@ -725,7 +969,7 @@ dialog#nfcModal::backdrop {
   height: 100%;
   background: linear-gradient(90deg, #169C46 0%, #1ED760 100%);
   border-radius: var(--radius-pill);
-  transition: width 0.3s ease;
+  transition: width 0.28s ease;
 }
 
 .nfc-progress-labels {
@@ -767,13 +1011,18 @@ dialog#nfcModal::backdrop {
   gap: 2px;
 }
 
-.modal-actions-row {
+.nfc-modal-actions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  margin-top: 8px;
 }
 
-.modal-actions-row .pill-btn {
+.modal-secondary-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.modal-secondary-actions .pill-btn {
   flex: 1;
 }
 
@@ -784,7 +1033,7 @@ dialog#sampleSheet {
   background: #1e1e1e;
   border-top-left-radius: var(--radius-modal);
   border-top-right-radius: var(--radius-modal);
-  padding: 20px 16px calc(var(--sab) + 16px) 16px;
+  padding: 18px 16px calc(var(--sab) + 16px) 16px;
   color: var(--color-text-primary);
   width: 100vw;
   max-width: 480px;
@@ -802,13 +1051,13 @@ dialog#sampleSheet::backdrop {
   height: 4px;
   background: rgba(255, 255, 255, 0.25);
   border-radius: 2px;
-  margin: 0 auto 16px auto;
+  margin: 0 auto 12px auto;
 }
 
 .sheet-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .sheet-options {
@@ -820,12 +1069,12 @@ dialog#sampleSheet::backdrop {
 .sheet-item {
   background: #282828;
   border-radius: var(--radius-inner);
-  padding: 14px;
+  padding: 13px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -833,20 +1082,21 @@ dialog#sampleSheet::backdrop {
   background: #333333;
 }
 
-/* 8. User Auth & Profile Styling */
+/* 8. User Auth, Profile & Hardware Device Manager */
 .user-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--color-border-subtle);
   color: var(--color-text-primary);
   border-radius: var(--radius-pill);
-  height: 36px;
-  padding: 0 10px 0 6px;
+  height: 34px;
+  padding: 0 9px 0 5px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  touch-action: manipulation;
   transition: all 0.15s;
 }
 
@@ -856,50 +1106,53 @@ dialog#sampleSheet::backdrop {
 }
 
 .user-avatar-mini {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   background: linear-gradient(135deg, #1ED760 0%, #15883e 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   color: #000;
   font-weight: 900;
 }
 
 .user-name-txt {
-  max-width: 68px;
+  max-width: 60px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Login Modal */
-dialog#loginModal {
+/* Login & Profile Modals */
+dialog#loginModal,
+dialog#profileModal {
   margin: auto;
   border: 1px solid var(--color-border-focus);
   background: #1a1a1a;
   border-radius: var(--radius-modal);
   padding: 0;
   color: var(--color-text-primary);
-  max-width: 380px;
+  max-width: 390px;
   width: 92vw;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9);
   outline: none;
 }
 
-dialog#loginModal::backdrop {
+dialog#loginModal::backdrop,
+dialog#profileModal::backdrop {
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 
-.login-modal-content {
-  padding: 24px 20px;
+.login-modal-content,
+.profile-modal-content {
+  padding: 20px 18px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   position: relative;
 }
 
@@ -907,11 +1160,11 @@ dialog#loginModal::backdrop {
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .login-title {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
 }
 
@@ -933,7 +1186,7 @@ dialog#loginModal::backdrop {
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-inner);
   padding: 0 12px;
-  height: 46px;
+  height: 44px;
   gap: 8px;
 }
 
@@ -949,7 +1202,7 @@ dialog#loginModal::backdrop {
   outline: none;
   color: #FFFFFF;
   font-family: var(--font-main);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .sms-send-btn {
@@ -957,7 +1210,7 @@ dialog#loginModal::backdrop {
   border: 1px solid var(--color-accent-primary);
   color: var(--color-accent-primary);
   border-radius: var(--radius-pill);
-  padding: 6px 12px;
+  padding: 5px 10px;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -975,72 +1228,102 @@ dialog#loginModal::backdrop {
   line-height: 1.4;
 }
 
-/* User Profile Sheet */
-dialog#profileModal {
-  margin: auto;
-  border: 1px solid var(--color-border-focus);
-  background: #1a1a1a;
-  border-radius: var(--radius-modal);
-  padding: 0;
-  color: var(--color-text-primary);
-  max-width: 380px;
-  width: 92vw;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9);
-  outline: none;
-}
-
-dialog#profileModal::backdrop {
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-
-.profile-modal-content {
-  padding: 24px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  position: relative;
-}
-
 .profile-header-card {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   background: #101010;
-  padding: 14px;
+  padding: 12px;
   border-radius: var(--radius-inner);
   border: 1px solid var(--color-border-subtle);
 }
 
 .profile-avatar-big {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   background: linear-gradient(135deg, #1ED760 0%, #15883e 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 18px;
   color: #000;
   font-weight: 900;
+  flex-shrink: 0;
 }
 
 .profile-name-group {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
-.profile-name {
-  font-size: 16px;
+.profile-nickname-input {
+  background: #1b1b1b;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  color: #FFFFFF;
+  font-size: 14px;
   font-weight: 700;
+  padding: 4px 8px;
+  width: 135px;
 }
 
 .profile-phone {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-text-secondary);
   font-family: var(--font-mono);
+}
+
+.device-manager-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #121212;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-inner);
+  padding: 10px;
+}
+
+.device-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bound-devices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.bound-device-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1d1d1d;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.bound-device-card.active {
+  border-color: var(--color-accent-primary);
+  background: rgba(30, 215, 96, 0.08);
+}
+
+.bind-device-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #0c0c0c;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  padding: 4px 8px;
 }
 
 /* 9. History Artworks Modal / Sheet */
@@ -1050,13 +1333,16 @@ dialog#historyModal {
   background: #161616;
   border-top-left-radius: var(--radius-modal);
   border-top-right-radius: var(--radius-modal);
-  padding: 16px 16px calc(var(--sab) + 16px) 16px;
+  padding: 14px 16px calc(var(--sab) + 16px) 16px;
   color: var(--color-text-primary);
   width: 100vw;
   max-width: 480px;
   height: 82dvh;
   outline: none;
   box-shadow: 0 -10px 40px rgba(0,0,0,0.85);
+}
+
+dialog#historyModal[open] {
   display: flex;
   flex-direction: column;
 }
@@ -1071,7 +1357,7 @@ dialog#historyModal::backdrop {
   display: flex;
   flex-direction: column;
   height: 100%;
-  gap: 12px;
+  gap: 10px;
   overflow: hidden;
 }
 
@@ -1100,7 +1386,7 @@ dialog#historyModal::backdrop {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   padding: 4px 2px 20px 2px;
   -webkit-overflow-scrolling: touch;
 }
@@ -1116,13 +1402,9 @@ dialog#historyModal::backdrop {
   transition: transform 0.12s, border-color 0.12s;
 }
 
-.history-item-card:active {
-  transform: scale(0.98);
-}
-
 .history-item-thumb {
-  width: 90px;
-  height: 68px;
+  width: 88px;
+  height: 66px;
   aspect-ratio: 4 / 3;
   border-radius: 6px;
   background: #0d0d0d;
@@ -1157,6 +1439,7 @@ dialog#historyModal::backdrop {
 .history-item-meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   font-size: 11px;
   color: var(--color-text-secondary);
@@ -1165,7 +1448,7 @@ dialog#historyModal::backdrop {
 .history-item-actions {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   flex-shrink: 0;
 }
 
@@ -1205,6 +1488,6 @@ dialog#historyModal::backdrop {
 }
 
 .history-empty-icon {
-  font-size: 40px;
+  font-size: 38px;
   opacity: 0.6;
 }

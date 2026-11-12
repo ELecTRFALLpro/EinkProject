@@ -35,6 +35,32 @@ func NewDeviceService(db *gorm.DB, cfg *config.Config, signer *crypto.TicketSign
 	}
 }
 
+// InitDefaults 预置官方演示/测试墨水屏硬件白名单，便于开发与真机贴卡调试即刻可用
+func (s *DeviceService) InitDefaults() error {
+	demoDevices := []struct {
+		UID      string
+		Nickname string
+		Location string
+	}{
+		{UID: "04:7A:3B:C2:59:81:80", Nickname: "客厅胡桃木相框", Location: "客厅茶几"},
+		{UID: "04:8B:4C:D3:60:92:81", Nickname: "书房极简白相框", Location: "书房书架"},
+	}
+
+	for _, d := range demoDevices {
+		dev, _, err := s.RegisterInStock(d.UID, "BATCH-2026-DEMO", "vA-400x300-bwry")
+		if err != nil {
+			return err
+		}
+		if dev.Nickname == "墨水屏相框" && d.Nickname != "" {
+			s.db.Model(dev).Updates(map[string]interface{}{
+				"nickname": d.Nickname,
+				"location": d.Location,
+			})
+		}
+	}
+	return nil
+}
+
 // generateDeviceID 生成设备唯一编号，如 dev_a1b2c3d4e5f6
 func generateDeviceID() string {
 	b := make([]byte, 6)

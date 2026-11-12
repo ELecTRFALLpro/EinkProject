@@ -103,3 +103,46 @@ func (h *ArtworkHandler) DeleteArtwork(c *gin.Context) {
 
 	response.OK(c, gin.H{"deleted": true})
 }
+
+type UpdateArtworkReq struct {
+	Title    string `json:"title"`
+	Subtitle string `json:"subtitle"`
+}
+
+func (h *ArtworkHandler) UpdateArtwork(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	artID := c.Param("id")
+
+	var req UpdateArtworkReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "PARAM_ERROR", err.Error())
+		return
+	}
+
+	art, err := h.artSvc.UpdateArtwork(userID, artID, req.Title, req.Subtitle)
+	if err != nil {
+		response.BadRequest(c, "UPDATE_FAILED", err.Error())
+		return
+	}
+
+	response.OK(c, gin.H{"artwork": art})
+}
+
+type RecordArtworkFlashReq struct {
+	DeviceID string `json:"device_id"`
+}
+
+func (h *ArtworkHandler) RecordFlash(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	artID := c.Param("id")
+
+	var req RecordArtworkFlashReq
+	_ = c.ShouldBindJSON(&req)
+
+	if err := h.artSvc.RecordFlashed(userID, artID, req.DeviceID); err != nil {
+		response.BadRequest(c, "RECORD_FLASH_FAILED", err.Error())
+		return
+	}
+
+	response.OK(c, gin.H{"flashed": true})
+}

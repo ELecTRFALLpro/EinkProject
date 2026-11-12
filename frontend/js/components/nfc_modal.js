@@ -1,9 +1,10 @@
 /**
  * NFC Flash Modal & Virtual Hardware Transfer Simulator
- * Conforms to modern dialog guidelines (native <dialog>, top-layer, light-dismiss, keyboard Esc).
+ * Integrates with Backend Device Binding (/v1/devices/activate) and Ed25519 Offline Tickets
  */
 
 import { downloadBinaryFile } from '../engine/packer.js';
+import { getActiveDevice, activateDevice } from '../api.js';
 
 export class NFCModal {
   constructor(dialogElement, options = {}) {
@@ -37,26 +38,26 @@ export class NFCModal {
             </svg>
           </div>
           <h2 class="nfc-title">无线烧录至相框 (NFC Flash)</h2>
-          <p class="nfc-subtitle" id="nfcStatusText">请将手机背面靠近墨水屏相框背部 NFC 感应区</p>
+          <p class="nfc-subtitle" id="nfcStatusText">请将 iPhone 顶部 NFC 感应区贴近墨水屏相框背面</p>
         </div>
 
         <!-- Technical Telemetry & Ticket Verification -->
         <div class="nfc-telemetry-box">
           <div class="telemetry-row">
-            <span class="telemetry-label">硬件分辨率</span>
-            <span class="telemetry-value">400 × 300 px (4:3)</span>
+            <span class="telemetry-label">目标画框设备</span>
+            <span class="telemetry-value" id="telemetryDeviceName">客厅胡桃木相框 (UID: ...8180)</span>
           </div>
           <div class="telemetry-row">
             <span class="telemetry-label">2-bit 封包体量</span>
-            <span class="telemetry-value badge-green" id="telemetryPayloadSize">30,000 Bytes (100% 校验通过)</span>
+            <span class="telemetry-value badge-green" id="telemetryPayloadSize">30,000 Bytes (125 Chunks × 240B)</span>
           </div>
           <div class="telemetry-row">
             <span class="telemetry-label">离线防盗票据</span>
-            <span class="telemetry-value text-accent" id="telemetryTicketStatus">Ed25519 签名有效 (永久离线白名单)</span>
+            <span class="telemetry-value text-accent" id="telemetryTicketStatus">Ed25519 签名就绪</span>
           </div>
           <div class="telemetry-row">
             <span class="telemetry-label">传输协议</span>
-            <span class="telemetry-value" id="telemetryProtocol">ISO 14443-A (Type 2 Tag / NTAG215)</span>
+            <span class="telemetry-value" id="telemetryProtocol">ISO 14443-4 / NDEF Custom APDU</span>
           </div>
         </div>
 
@@ -75,19 +76,19 @@ export class NFCModal {
         <div class="nfc-success-banner" id="nfcSuccessBanner" style="display: none;">
           <div class="success-icon">✓</div>
           <div class="success-text">
-            <strong>30KB 数据包写入成功！</strong>
-            <span>相框正在进行四色电泳波形刷屏，静候 15~20 秒即可完成。</span>
+            <strong>30KB 胶片位图写入成功！</strong>
+            <span>相框正在执行三阶段四色微胶囊电泳刷新，同时作品已自动归档至相册。</span>
           </div>
         </div>
 
         <!-- Action Controls -->
         <div class="nfc-modal-actions">
           <button class="pill-btn pill-btn-primary full-width" id="btnSimulateTap">
-            ⚡ 模拟 NFC 感应刷入 (未接硬件调试)
+            ⚡ 模拟 NFC 贴卡烧录 (验证票据并刷屏)
           </button>
           <div class="modal-secondary-actions">
             <button class="pill-btn pill-btn-ghost" id="btnDownloadBin">
-              💾 导出 .bin 固件烧录文件
+              💾 导出 30KB .bin
             </button>
             <button class="pill-btn pill-btn-ghost" id="btnCancelNfc">
               关闭
@@ -128,7 +129,9 @@ export class NFCModal {
 
     const btnSimulate = this.dialog.querySelector('#btnSimulateTap');
     btnSimulate.addEventListener('click', () => {
-      this.runVirtualHardwareTransfer();
+      const activeDev = getActiveDevice();
+      const targetUid = activeDev?.uid_full || '04:7A:3B:C2:59:81:80';
+      this.runVirtualHardwareTransfer(targetUid);
     });
 
     const btnDownload = this.dialog.querySelector('#btnDownloadBin');
@@ -144,7 +147,12 @@ export class NFCModal {
     this.currentTicket = ticketInfo;
     this.isFlashing = false;
 
-    // Reset UI state
+    const activeDev = getActiveDevice();
+    const devNameEl = this.dialog.querySelector('#telemetryDeviceName');
+    if (devNameEl && activeDev) {
+      devNameEl.textContent = `${activeDev.nickname || '墨水屏相框'} (UID: ...${activeDev.uid_last4 || '8180'})`;
+    }
+
     const progressContainer = this.dialog.querySelector('#nfcProgressContainer');
     const successBanner = this.dialog.querySelector('#nfcSuccessBanner');
     const statusText = this.dialog.querySelector('#nfcStatusText');
@@ -152,26 +160,21 @@ export class NFCModal {
 
     progressContainer.style.display = 'none';
     successBanner.style.display = 'none';
-    btnSimulate.style.display = 'block';
+    btnSimulate.style.display = 'inline-flex';
     btnSimulate.disabled = false;
-    statusText.textContent = '请将手机背面靠近墨水屏相框背部 NFC 感应区';
+    statusText.textContent = '请将 iPhone 顶部 NFC 感应区贴近墨水屏相框背面';
 
-    // Show native modal
     if (typeof this.dialog.showModal === 'function') {
       this.dialog.showModal();
     } else {
       this.dialog.setAttribute('open', '');
     }
 
-    // Check if Web NFC is natively available (e.g. Chrome on Android)
     if ('NDEFReader' in window) {
       this.startNativeWebNFC();
     }
   }
 
-  /**
-   * Native Web NFC Support (Android Chrome)
-   */
   async startNativeWebNFC() {
     try {
       const ndef = new window.NDEFReader();
@@ -188,49 +191,71 @@ export class NFCModal {
     }
   }
 
-  /**
-   * High-fidelity Virtual Hardware Transfer Simulation
-   * Simulates ~20 KB/s NFC write rate with 4-phase verification.
-   */
   async runVirtualHardwareTransfer(deviceUid = '04:7A:3B:C2:59:81:80') {
     if (this.isFlashing) return;
     this.isFlashing = true;
+    const startTime = Date.now();
 
     const progressContainer = this.dialog.querySelector('#nfcProgressContainer');
     const progressFill = this.dialog.querySelector('#nfcProgressFill');
     const progressStep = this.dialog.querySelector('#nfcProgressStep');
     const progressPercent = this.dialog.querySelector('#nfcProgressPercent');
     const successBanner = this.dialog.querySelector('#nfcSuccessBanner');
-    const btnSimulate = this.dialog.querySelector('#btnSimulateTap');
+    const btnSimulate = this.dialog.querySelector('#nfcSimulateTap') || this.dialog.querySelector('#btnSimulateTap');
     const statusText = this.dialog.querySelector('#nfcStatusText');
+    const ticketStatusEl = this.dialog.querySelector('#telemetryTicketStatus');
 
-    progressContainer.style.display = 'block';
+    progressContainer.style.display = 'flex';
     successBanner.style.display = 'none';
     btnSimulate.disabled = true;
 
+    let resolvedDeviceId = getActiveDevice()?.id || 'dev_demo_401a';
+
+    // Step 1: Request/Verify Ed25519 Ticket from Backend if available
+    progressFill.style.width = '15%';
+    progressPercent.textContent = '15%';
+    progressStep.textContent = `建立射频握手 (UID: ${deviceUid})...`;
+    await this.wait(280);
+
+    try {
+      const activeDev = getActiveDevice();
+      const actRes = await activateDevice(deviceUid, activeDev?.nickname || '客厅胡桃木相框');
+      if (actRes && actRes.device) {
+        resolvedDeviceId = actRes.device.id;
+      }
+      if (actRes && actRes.ticket && ticketStatusEl) {
+        ticketStatusEl.textContent = `Ed25519 验签通过 (${actRes.ticket.slice(0, 14)}...)`;
+      }
+    } catch (err) {
+      console.warn('Ticket verification notice:', err.message);
+    }
+
     const steps = [
-      { pct: 15, text: `建立 NFC 射频连接 (UID: ${deviceUid})...` },
-      { pct: 35, text: '校验 Ed25519 固件离线安全票据 (租期有效)...' },
-      { pct: 60, text: '传输 2-bit MSB 像素数据 (Sectors 0~180)...' },
-      { pct: 85, text: '传输 2-bit MSB 像素数据 (Sectors 181~468)...' },
-      { pct: 100, text: 'CRC32 校验一致，触发硬件刷新脉冲！' }
+      { pct: 38, text: '下发 Ed25519 离线授权票据 (82 Bytes)...' },
+      { pct: 64, text: '写入 2-bit MSB 图像分块 (Chunks 1~65 / 125)...' },
+      { pct: 88, text: '写入 2-bit MSB 图像分块 (Chunks 66~125 / 125)...' },
+      { pct: 100, text: 'CRC32 校验一致，触发四色微胶囊刷新脉冲！' }
     ];
 
     for (const step of steps) {
       progressFill.style.width = step.pct + '%';
       progressPercent.textContent = step.pct + '%';
       progressStep.textContent = step.text;
-      await this.wait(350);
+      await this.wait(300);
     }
 
-    statusText.textContent = '烧录指令执行完毕！墨水屏已接收数据。';
+    const durationMs = Date.now() - startTime;
+    statusText.textContent = `烧录成功！耗时 ${(durationMs / 1000).toFixed(1)} 秒，墨水屏正在显影。`;
     successBanner.style.display = 'flex';
     this.isFlashing = false;
 
     if (typeof this.options.onFlashSuccess === 'function') {
       this.options.onFlashSuccess({
+        deviceId: resolvedDeviceId,
         deviceUid,
-        payloadSize: this.currentPayload.length,
+        payloadSize: this.currentPayload ? this.currentPayload.length : 30000,
+        chunks: 125,
+        durationMs,
         timestamp: Date.now()
       });
     }

@@ -13,25 +13,28 @@
 </head>
 <body>
   <div class="ios-app-container">
+    <!-- Dynamic Island Toast Notification -->
+    <div id="iosToast" class="ios-toast" role="status" aria-live="polite"></div>
+
     <!-- 1. iOS Top Navigation Bar -->
     <header class="ios-nav-bar">
       <div class="nav-left">
         <input type="file" id="fileUploadInput" accept="image/*" style="display: none;">
         <button class="ios-icon-btn" id="btnUploadPhoto" title="从手机相册选择照片">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
             <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
           </svg>
           相册
         </button>
         <button class="ios-icon-btn" id="btnOpenSamples" title="切换精选摄影样本">
-          ✨ 样本
+          ✨ 样张
         </button>
       </div>
 
-      <div class="device-badge-pill" id="deviceStatusPill">
+      <button type="button" class="device-badge-pill" id="deviceStatusPill" title="点击管理已绑定的墨水屏相框">
         <span class="device-dot-pulse"></span>
-        <span>4.01" NFC 就绪</span>
-      </div>
+        <span id="navActiveDeviceText">4.01" NFC 就绪</span>
+      </button>
 
       <div class="nav-right">
         <!-- History Records Button -->
@@ -47,12 +50,12 @@
 
     <!-- 2. Central E-Ink Frame & Gesture Touch Stage -->
     <main class="ios-viewport-stage">
-      <div id="frameSimContainer">
+      <div id="frameSimContainer" class="frame-sim-host">
         <!-- Rendered by FrameSimulator component -->
       </div>
 
-      <!-- Quick Transform & Crop Bar -->
-      <div class="quick-transform-bar">
+      <!-- Horizontally Scroll-Snapping Quick Transform & Action Bar -->
+      <div class="quick-transform-bar" role="region" aria-label="画面几何变换与快捷操作">
         <button class="transform-chip" id="btnRotateCCW" title="逆时针旋转 90 度">
           ↺ 90°
         </button>
@@ -62,30 +65,37 @@
         <button class="transform-chip" id="btnFlipH" title="水平镜像翻转">
           ⇄ 翻转
         </button>
-        <button class="transform-chip" id="btnToggleSplit" title="原图与墨水屏对比">
+        <button class="transform-chip" id="btnToggleSplit" title="原图与墨水屏分屏对比">
           ◨ 对比
         </button>
         <button class="transform-chip active" id="btnToggleTexture" title="纸面反光微质感">
           ▤ 纸质
         </button>
-        <button class="transform-chip" id="btnSaveToHistory" title="保存当前调色作品到相册历史" style="color: var(--color-accent-primary); border-color: rgba(30, 215, 96, 0.3);">
+        <button class="transform-chip chip-accent" id="btnSaveToHistory" title="保存当前调色作品到相册历史">
           💾 存入相册
         </button>
       </div>
     </main>
 
     <!-- 3. iOS Segmented Tab Bar -->
-    <nav class="ios-segmented-tabs">
+    <nav class="ios-segmented-tabs" aria-label="暗室功能切换">
       <button class="tab-btn active" data-tab="tabPresets">🎞️ 胶片滤镜</button>
       <button class="tab-btn" data-tab="tabToning">🎨 基础调色</button>
       <button class="tab-btn" data-tab="tabFraming">🖼️ 画框算法</button>
     </nav>
 
     <!-- 4. Interactive Bottom Drawer Panels -->
-    <div class="tab-drawer-wrapper">
+    <div class="tab-drawer-wrapper" id="tabDrawerWrapper">
       <!-- Tab 1: Film Presets (RNI All Films 5 Pro) -->
       <section class="tab-panel active" id="tabPresets">
-        <div class="film-shelf-scroll" id="filmShelfContainer">
+        <div class="film-category-bar" id="filmCategoryBar" role="region" aria-label="胶片分类筛选">
+          <button type="button" class="cat-chip active" data-cat="all">全部 (12)</button>
+          <button type="button" class="cat-chip" data-cat="instant">拍立得撕拉片</button>
+          <button type="button" class="cat-chip" data-cat="portrait">人像柔肤</button>
+          <button type="button" class="cat-chip" data-cat="film">风光正片</button>
+          <button type="button" class="cat-chip" data-cat="mono">复古与黑白</button>
+        </div>
+        <div class="film-shelf-scroll" id="filmShelfContainer" role="region" aria-label="RNI 胶片预设列表">
           <!-- Dynamically populated -->
         </div>
       </section>
@@ -94,8 +104,8 @@
       <section class="tab-panel" id="tabToning">
         <div class="sliders-grid">
           <!-- 1. Brightness -->
-          <div class="slider-unit">
-            <div class="slider-header-row">
+          <div class="slider-unit" data-default="0">
+            <div class="slider-header-row" title="双击标题重置此项">
               <span>☀️ 曝光亮度</span>
               <span class="slider-val-num" id="valBrightness">0</span>
             </div>
@@ -103,8 +113,8 @@
           </div>
 
           <!-- 2. Contrast -->
-          <div class="slider-unit">
-            <div class="slider-header-row">
+          <div class="slider-unit" data-default="1.20">
+            <div class="slider-header-row" title="双击标题重置此项">
               <span>◐ 对比度</span>
               <span class="slider-val-num" id="valContrast">1.20</span>
             </div>
@@ -112,8 +122,8 @@
           </div>
 
           <!-- 3. Saturation -->
-          <div class="slider-unit">
-            <div class="slider-header-row">
+          <div class="slider-unit" data-default="1.15">
+            <div class="slider-header-row" title="双击标题重置此项">
               <span>🎨 色彩饱和度</span>
               <span class="slider-val-num" id="valSaturation">1.15</span>
             </div>
@@ -121,8 +131,8 @@
           </div>
 
           <!-- 4. Warmth -->
-          <div class="slider-unit">
-            <div class="slider-header-row">
+          <div class="slider-unit" data-default="0">
+            <div class="slider-header-row" title="双击标题重置此项">
               <span>🌡️ 胶片色温</span>
               <span class="slider-val-num" id="valWarmth">0</span>
             </div>
@@ -130,8 +140,8 @@
           </div>
 
           <!-- 5. Sharpness -->
-          <div class="slider-unit">
-            <div class="slider-header-row">
+          <div class="slider-unit" data-default="40">
+            <div class="slider-header-row" title="双击标题重置此项">
               <span>🗡️ 轮廓锐度</span>
               <span class="slider-val-num" id="valSharpness">40%</span>
             </div>
@@ -139,8 +149,8 @@
           </div>
 
           <!-- 6. Red Damper -->
-          <div class="slider-unit">
-            <div class="slider-header-row">
+          <div class="slider-unit" data-default="1.15">
+            <div class="slider-header-row" title="双击标题重置此项">
               <span>🛡️ 防红斑阻尼</span>
               <span class="slider-val-num" id="valRedDamper">1.15</span>
             </div>
@@ -149,47 +159,57 @@
         </div>
 
         <div class="tone-actions-row">
-          <span style="font-size: 11px; color: var(--color-text-tertiary);">
-            微调曝光与对比度可有效防止暗部死黑
-          </span>
-          <button class="pill-btn pill-btn-ghost" id="btnResetTone" style="min-height: 32px; padding: 4px 14px; font-size: 12px;">
-            重置影调
+          <span class="tone-hint-txt">💡 双击任意参数名可单独归零</span>
+          <button class="pill-btn pill-btn-ghost btn-reset-tone" id="btnResetTone">
+            重置全部影调
           </button>
         </div>
       </section>
 
-      <!-- Tab 3: Framing, Dithering Algorithm & Histogram -->
+      <!-- Tab 3: Framing, Custom Subtitle, Dithering Algorithm & Histogram -->
       <section class="tab-panel" id="tabFraming">
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          <div class="framing-row">
-            <button class="framing-btn active" id="btnFramePolaroid">经典拍立得留白边</button>
-            <button class="framing-btn" id="btnFrameFull">全屏无边框 (Full Bleed)</button>
+        <div class="framing-stack">
+          <!-- 4 Frame Templates -->
+          <div class="framing-row four-cols">
+            <button class="framing-btn active" data-frame="polaroid" id="btnFramePolaroid">拍立得留白</button>
+            <button class="framing-btn" data-frame="postcard" id="btnFramePostcard">明信片EXIF</button>
+            <button class="framing-btn" data-frame="gallery" id="btnFrameGallery">画廊宽卡纸</button>
+            <button class="framing-btn" data-frame="full" id="btnFrameFull">全屏无边框</button>
           </div>
 
-          <div class="framing-row">
-            <button class="framing-btn active" id="btnAtkinson">Atkinson (锐利人像)</button>
-            <button class="framing-btn" id="btnFloyd">Floyd-Steinberg (平滑)</button>
+          <!-- Custom Caption / Subtitle Input for Polaroid & Postcard -->
+          <div class="caption-edit-row" id="captionEditRow">
+            <span class="caption-label">✒️ 画框题词</span>
+            <input type="text" id="inputFrameSubtitle" class="caption-input" placeholder="留空自动使用胶片名 · 2026" maxlength="36">
           </div>
 
+          <!-- 3 Dithering Modes -->
+          <div class="framing-row three-cols">
+            <button class="framing-btn active" data-dither="atkinson" id="btnAtkinson">Atkinson (人像)</button>
+            <button class="framing-btn" data-dither="floyd" id="btnFloyd">Floyd (风景平滑)</button>
+            <button class="framing-btn" data-dither="bayer" id="btnBayer">Bayer 4×4 (网点)</button>
+          </div>
+
+          <!-- 4-Color Pigment Histogram -->
           <div class="histogram-row">
             <div class="hist-chip">
               <div class="hist-swatch-sm" style="background: var(--color-eink-black);"></div>
-              <span style="font-size: 9px; color: var(--color-text-tertiary);">黑 (Black)</span>
+              <span class="hist-label">黑</span>
               <span class="hist-num" id="histBlackPct">0%</span>
             </div>
             <div class="hist-chip">
               <div class="hist-swatch-sm" style="background: var(--color-eink-white);"></div>
-              <span style="font-size: 9px; color: var(--color-text-tertiary);">白 (White)</span>
+              <span class="hist-label">白</span>
               <span class="hist-num" id="histWhitePct">0%</span>
             </div>
             <div class="hist-chip">
               <div class="hist-swatch-sm" style="background: var(--color-eink-yellow);"></div>
-              <span style="font-size: 9px; color: var(--color-text-tertiary);">黄 (Yellow)</span>
+              <span class="hist-label">黄</span>
               <span class="hist-num" id="histYellowPct">0%</span>
             </div>
             <div class="hist-chip">
               <div class="hist-swatch-sm" style="background: var(--color-eink-red);"></div>
-              <span style="font-size: 9px; color: var(--color-text-tertiary);">红 (Red)</span>
+              <span class="hist-label">红</span>
               <span class="hist-num" id="histRedPct">0%</span>
             </div>
           </div>
@@ -199,7 +219,7 @@
 
     <!-- 5. Sticky Thumb Action Dock -->
     <footer class="ios-bottom-dock">
-      <button class="pill-btn btn-refresh-wave" id="btnTriggerRefresh" title="模拟物理相框局部/全局刷新">
+      <button class="pill-btn btn-refresh-wave" id="btnTriggerRefresh" title="模拟物理相框三阶段微胶囊电泳刷新">
         ↻ 模拟刷屏
       </button>
       <button class="pill-btn pill-btn-primary btn-nfc-main" id="btnTriggerFlash">
@@ -214,7 +234,7 @@
       <button class="modal-close-btn" id="btnCloseLoginModal" aria-label="关闭">✕</button>
       <div class="login-header">
         <h2 class="login-title">用户登录 / 注册</h2>
-        <p class="login-subtitle">未注册手机号验证后自动创建账号并开通云相册</p>
+        <p class="login-subtitle">未注册手机号验证后自动创建账号并开启云端暗室相册</p>
       </div>
 
       <div class="login-form-group">
@@ -224,13 +244,13 @@
         </div>
 
         <div class="login-input-row">
-          <input type="number" id="inputSMSCode" class="login-input" placeholder="短信验证码" maxlength="6" value="888888">
+          <input type="text" inputmode="numeric" id="inputSMSCode" class="login-input" placeholder="短信验证码" maxlength="6" value="888888">
           <button type="button" class="sms-send-btn" id="btnSendSMS">获取验证码</button>
         </div>
       </div>
 
       <div class="login-tip-text">
-        💡 提示：开发调试环境下默认验证码为 <strong style="color: var(--color-accent-primary);">888888</strong>，点击一键快速登录。
+        💡 开发调试环境下默认验证码为 <strong style="color: var(--color-accent-primary);">888888</strong>，可直接点击下方登录。
       </div>
 
       <button class="pill-btn pill-btn-primary full-width" id="btnSubmitLogin" style="height: 46px;">
@@ -239,33 +259,42 @@
     </div>
   </dialog>
 
-  <!-- 7. User Profile Dialog (Native <dialog>) -->
+  <!-- 7. User Profile & Hardware Device Center Dialog (Native <dialog>) -->
   <dialog id="profileModal" closedby="any">
     <div class="profile-modal-content">
       <button class="modal-close-btn" id="btnCloseProfileModal" aria-label="关闭">✕</button>
       <div class="sheet-handle"></div>
       <div class="profile-header-card">
         <div class="profile-avatar-big" id="profileAvatar">👤</div>
-        <div class="profile-name-group">
-          <span class="profile-name" id="profileNickname">未登录用户</span>
+        <div class="profile-name-group" style="flex: 1;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <input type="text" id="inputProfileNickname" class="profile-nickname-input" placeholder="输入昵称" maxlength="20">
+            <button type="button" class="sms-send-btn" id="btnSaveNickname">保存昵称</button>
+          </div>
           <span class="profile-phone" id="profilePhone">未绑定手机号</span>
         </div>
       </div>
 
-      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-        <div style="display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid var(--color-border-subtle);">
-          <span style="color: var(--color-text-secondary);">云端相册同步</span>
-          <span class="badge badge-green">已激活</span>
+      <!-- Bound Hardware Devices Management -->
+      <div class="device-manager-section">
+        <div class="device-section-header">
+          <span style="font-size: 13px; font-weight: 700;">🖼️ 我的墨水屏画框 (NFC 硬件白名单)</span>
+          <span class="badge badge-green">Ed25519 授权有效</span>
         </div>
-        <div style="display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid var(--color-border-subtle);">
-          <span style="color: var(--color-text-secondary);">防盗离线授权</span>
-          <span style="font-family: var(--font-mono); font-weight: 600;">Ed25519 有效</span>
+        <div id="boundDevicesList" class="bound-devices-list">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Bind New Hardware Device by UID -->
+        <div class="bind-device-row">
+          <input type="text" id="inputBindDeviceUid" class="login-input" placeholder="输入或感应 NFC UID (如 04:8B:4C:D3:60:92:81)" value="04:8B:4C:D3:60:92:81">
+          <button type="button" class="sms-send-btn" id="btnBindNewDevice">+ 绑定画框</button>
         </div>
       </div>
 
-      <div style="display: flex; gap: 8px; margin-top: 8px;">
+      <div style="display: flex; gap: 8px; margin-top: 4px;">
         <button class="pill-btn pill-btn-ghost full-width" id="btnLogout">
-          退出当前登录
+          退出当前账号
         </button>
       </div>
     </div>
