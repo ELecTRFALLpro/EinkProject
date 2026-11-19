@@ -7,8 +7,8 @@ export class FrameSimulator {
   constructor(containerElement, options = {}) {
     this.container = containerElement;
     this.options = Object.assign({
-      width: 400,
-      height: 300,
+      width: 300,
+      height: 400,
       paperTexture: true,
       showSplit: false,
       onPan: null,
@@ -29,10 +29,17 @@ export class FrameSimulator {
       <div class="frame-bezel" id="frameBezel">
         <div class="frame-inner-mat">
           <div class="screen-viewport" id="screenViewport">
-            <canvas id="einkCanvas" width="400" height="300" class="eink-canvas"></canvas>
-            <canvas id="splitCanvas" width="400" height="300" class="split-canvas" style="display: none;"></canvas>
+            <canvas id="einkCanvas" width="300" height="400" class="eink-canvas"></canvas>
+            <canvas id="splitCanvas" width="300" height="400" class="split-canvas" style="display: none;"></canvas>
             <div class="paper-grain-overlay" id="paperGrain"></div>
+            <div class="vf-reticle" aria-hidden="true">
+              <span class="vf-corner tl"></span>
+              <span class="vf-corner tr"></span>
+              <span class="vf-corner bl"></span>
+              <span class="vf-corner br"></span>
+            </div>
             <div class="refresh-flash-overlay" id="refreshOverlay"></div>
+            <div class="shutter-blink-overlay" id="shutterBlink"></div>
             <button type="button" class="zoom-reset-badge" id="zoomResetBadge" style="display: none;" title="点击一键复位构图">
               🔍 1.0x · 复位
             </button>
@@ -49,7 +56,7 @@ export class FrameSimulator {
             </div>
           </div>
           <div class="frame-engraving">
-            <span>EPAPER 4.01" · 400×300 2-BIT</span>
+            <span id="frameEngravingText">ONESTEP 600 · 300×400 E-INK</span>
           </div>
         </div>
       </div>
@@ -61,6 +68,8 @@ export class FrameSimulator {
     this.splitCtx = this.splitCanvas.getContext('2d');
     this.paperGrain = this.container.querySelector('#paperGrain');
     this.refreshOverlay = this.container.querySelector('#refreshOverlay');
+    this.shutterBlink = this.container.querySelector('#shutterBlink');
+    this.engravingEl = this.container.querySelector('#frameEngravingText');
     this.splitHandle = this.container.querySelector('#splitHandle');
     this.screenViewport = this.container.querySelector('#screenViewport');
     this.gestureHint = this.container.querySelector('#gestureHint');
@@ -225,9 +234,9 @@ export class FrameSimulator {
   }
 
   setOriginalImage(imgOrCanvas) {
-    this.splitCtx.clearRect(0, 0, 400, 300);
-    this.splitCtx.drawImage(imgOrCanvas, 0, 0, 400, 300);
-    this.originalImageData = this.splitCtx.getImageData(0, 0, 400, 300);
+    this.splitCtx.clearRect(0, 0, 300, 400);
+    this.splitCtx.drawImage(imgOrCanvas, 0, 0, 300, 400);
+    this.originalImageData = this.splitCtx.getImageData(0, 0, 300, 400);
   }
 
   renderDitheredImage(imageData, animate = false) {
@@ -260,6 +269,19 @@ export class FrameSimulator {
     await this.wait(300);
     overlay.className = 'refresh-flash-overlay';
     this.isRefreshing = false;
+  }
+
+  setEngravingText(text) {
+    if (this.engravingEl && text) {
+      this.engravingEl.textContent = text;
+    }
+  }
+
+  async triggerShutterBlink() {
+    if (!this.shutterBlink) return;
+    this.shutterBlink.classList.add('fire');
+    await this.wait(110);
+    this.shutterBlink.classList.remove('fire');
   }
 
   wait(ms) {

@@ -8,6 +8,7 @@ import { NFCModal } from './components/nfc_modal.js';
 import { ditherAtkinson, ditherFloydSteinberg, ditherOrderedBayer } from './engine/dither.js';
 import { pack2BitMSB } from './engine/packer.js';
 import { loadCubeLUT, applyLUTToImageData, applyParametricAdjustments } from './engine/lut.js';
+import { getCameraTheme } from './camera_themes.js';
 import {
   fetchFilters,
   recordFlashTelemetry,
@@ -30,6 +31,75 @@ import {
   deleteArtwork,
   uploadImageFile
 } from './api.js';
+
+// Modern Top-Layer Dialog Exit & Light-Dismiss Helpers (Safari/Firefox Fallbacks)
+let supportsDisplayTransition;
+function canTransitionDisplay() {
+  if (supportsDisplayTransition !== undefined) return supportsDisplayTransition;
+  if (!window.CSS?.supports?.('transition-behavior', 'allow-discrete') || !document.body) {
+    return false;
+  }
+  const probe = document.createElement('div');
+  probe.style.cssText = 'transition: display 1s allow-discrete !important; display: block;';
+  document.body.appendChild(probe);
+  getComputedStyle(probe).display;
+  probe.style.display = 'none';
+  supportsDisplayTransition = getComputedStyle(probe).display === 'block';
+  probe.remove();
+  return supportsDisplayTransition;
+}
+
+function supportsTopLayerExit() {
+  return window.CSS?.supports?.('overlay', 'auto') && canTransitionDisplay();
+}
+
+async function closeTopLayer(dialog) {
+  if (!dialog || !dialog.open) return;
+  if (!supportsTopLayerExit()) {
+    dialog.setAttribute('data-closing', '');
+    const animations = dialog.getAnimations({ subtree: true });
+    if (animations.length > 0) {
+      await Promise.race([
+        Promise.allSettled(animations.map((a) => a.finished)),
+        new Promise((r) => setTimeout(r, 400)),
+      ]);
+    }
+    if (!dialog.hasAttribute('data-closing')) return;
+    dialog.removeAttribute('data-closing');
+  }
+  dialog.close();
+}
+
+function setupDialogDismiss(dialog, onBeforeClose = null) {
+  if (!dialog) return;
+
+  // Intercept Esc / native cancel so exit animations play smoothly across browsers
+  dialog.addEventListener('cancel', (event) => {
+    if (onBeforeClose && onBeforeClose() === false) {
+      event.preventDefault();
+      return;
+    }
+    event.preventDefault();
+    closeTopLayer(dialog);
+  });
+
+  // Fallback for browsers without <dialog closedby="any"> (e.g. Safari)
+  if (!('closedBy' in HTMLDialogElement.prototype)) {
+    dialog.addEventListener('click', (event) => {
+      if (event.target !== dialog) return;
+      const rect = dialog.getBoundingClientRect();
+      const isDialogContent = (
+        rect.top <= event.clientY &&
+        event.clientY <= rect.top + rect.height &&
+        rect.left <= event.clientX &&
+        event.clientX <= rect.left + rect.width
+      );
+      if (isDialogContent) return;
+      if (onBeforeClose && onBeforeClose() === false) return;
+      closeTopLayer(dialog);
+    });
+  }
+}
 
 class EinkApp {
   constructor() {
@@ -69,8 +139,8 @@ class EinkApp {
     this.toastTimer = null;
 
     this.offscreenCanvas = document.createElement('canvas');
-    this.offscreenCanvas.width = 400;
-    this.offscreenCanvas.height = 300;
+    this.offscreenCanvas.width = 300;
+    this.offscreenCanvas.height = 400;
     this.offCtx = this.offscreenCanvas.getContext('2d', { willReadFrequently: true });
   }
 
@@ -209,17 +279,96 @@ class EinkApp {
   updateUserAuthUI() {
     const user = getCurrentUser();
     this.state.currentUser = user;
-    const btnAuth = document.getElementById('btnUserAuth');
+    const statusEl = document.getElementById('moreAuthStatusText');
+    if (statusEl) {
+      if (user && user.nickname) {
+        statusEl.textContent = user.nickname;
+        statusEl.className = 'badge badge-green';
+      } else {
+        statusEl.textContent = '未登录';
+        statusEl.className = 'badge badge-film';
+      }
+    }
+  }
 
-    if (user && user.nickname) {
-      btnAuth.className = 'user-pill';
-      btnAuth.innerHTML = `
-        <span class="user-avatar-mini">${user.nickname.slice(0, 1) || '用'}</span>
-        <span class="user-name-txt">${user.nickname}</span>
-      `;
-    } else {
-      btnAuth.className = 'ios-icon-btn';
-      btnAuth.innerHTML = `👤 登录`;
+  // --- Dynamic Camera Skinning & Real Camera Image Sync ---
+  applyCameraTheme(presetId) {
+    const theme = getCameraTheme(presetId);
+    const shell = document.getElementById('cameraShell');
+    if (shell) {
+      shell.setAttribute('data-cam-tone', theme.tone || 'light');
+      Object.entries(theme.vars).forEach(([prop, val]) => {
+        shell.style.setProperty(prop, val);
+      });
+    }
+
+    // Update top Polaroid-style 5-segment stripe
+    const stripe = document.getElementById('camTopStripe');
+    if (stripe && Array.isArray(theme.stripe)) {
+      const segs = stripe.querySelectorAll('.stripe-seg');
+      segs.forEach((seg, idx) => {
+        if (theme.stripe[idx]) seg.style.backgroundColor = theme.stripe[idx];
+      });
+    }
+
+    // Update first-screen real camera image & nameplate
+    const camImg = document.getElementById('activeCameraImg');
+    if (camImg) {
+      camImg.src = theme.image;
+      camImg.alt = theme.cameraName;
+    }
+    const camName = document.getElementById('activeCameraName');
+    if (camName) camName.textContent = theme.cameraName;
+
+    const lutShort = document.getElementById('activeLutShort');
+    if (lutShort) lutShort.textContent = `${theme.shortBadge} · LUT`;
+
+    const renderDots = (container) => {
+      if (!container) return;
+      container.innerHTML = '';
+      theme.lutColors.forEach(c => {
+        const dot = document.createElement('span');
+        dot.className = 'lut-dot';
+        dot.style.backgroundColor = c;
+        container.appendChild(dot);
+      });
+    };
+    renderDots(document.getElementById('activeLutDots'));
+    renderDots(document.getElementById('heroLutDots'));
+
+    // Update Darkroom Hero Showcase
+    const heroImg = document.getElementById('heroCameraImg');
+    if (heroImg) {
+      heroImg.src = theme.image;
+      heroImg.alt = theme.cameraName;
+    }
+    const heroName = document.getElementById('heroCameraName');
+    if (heroName) heroName.textContent = theme.cameraName;
+
+    const heroNote = document.getElementById('heroCameraNote');
+    if (heroNote) heroNote.textContent = theme.filmNote;
+
+    const heroFile = document.getElementById('heroLutFile');
+    if (heroFile) heroFile.textContent = `${theme.id}.cube`;
+
+    // Update Mechanical Counter (01..12)
+    const counterEl = document.getElementById('camCounterNum');
+    if (counterEl && this.state.presets.length) {
+      const idx = this.state.presets.findIndex(p => p.id === presetId);
+      const num = idx >= 0 ? idx + 1 : 1;
+      counterEl.textContent = String(num).padStart(2, '0');
+    }
+
+    // Update Viewfinder Spec Engraving
+    if (this.simulator) {
+      this.simulator.setEngravingText(`${theme.shortBadge} · 300×400 E-INK`);
+    }
+  }
+
+  updateAlbumThumb(src) {
+    const thumb = document.getElementById('quickAlbumThumb');
+    if (thumb && src) {
+      thumb.src = src;
     }
   }
 
@@ -236,6 +385,7 @@ class EinkApp {
 
     if (!this.state.presets.length) return;
     this.state.selectedPreset = this.state.presets.find(p => p.id === 'polaroid_600') || this.state.presets[0];
+    this.applyCameraTheme(this.state.selectedPreset.id);
     this.renderFilmShelf();
   }
 
@@ -253,32 +403,29 @@ class EinkApp {
     filtered.forEach((preset) => {
       const card = document.createElement('div');
       const isSelected = this.state.selectedPreset && preset.id === this.state.selectedPreset.id;
+      const camTheme = getCameraTheme(preset.id);
       card.className = `film-card ${isSelected ? 'active' : ''}`;
       card.dataset.id = preset.id;
 
       let badgeClass = 'badge-film';
-      let brandTag = 'FILM';
-      if (preset.id.startsWith('polaroid')) {
-        badgeClass = 'badge-polaroid';
-        brandTag = 'POLAROID';
-      } else if (preset.id.startsWith('fuji')) {
-        badgeClass = 'badge-fuji';
-        brandTag = 'FUJIFILM';
-      } else if (preset.id.startsWith('kodak') || preset.id.startsWith('kodachrome')) {
-        badgeClass = 'badge-kodak';
-        brandTag = 'KODAK';
-      } else if (preset.id.startsWith('ilford')) {
-        badgeClass = 'badge-mono';
-        brandTag = 'ILFORD';
-      }
+      if (preset.id.startsWith('polaroid')) badgeClass = 'badge-polaroid';
+      else if (preset.id.startsWith('fuji')) badgeClass = 'badge-fuji';
+      else if (preset.id.startsWith('kodak') || preset.id.startsWith('kodachrome')) badgeClass = 'badge-kodak';
+      else if (preset.id.startsWith('ilford')) badgeClass = 'badge-mono';
 
       card.innerHTML = `
-        <div class="film-card-thumb">
-          <img src="assets/thumbs/${preset.id}.png" alt="${preset.name}" width="102" height="64" loading="lazy">
+        <div class="film-card-visuals">
+          <div class="film-card-cam-box">
+            <img src="${camTheme.image}" alt="${camTheme.cameraName}" width="52" height="52" loading="lazy">
+          </div>
+          <div class="film-card-thumb">
+            <img src="assets/thumbs/${preset.id}.png" alt="${preset.name}" width="54" height="58" loading="lazy">
+          </div>
         </div>
         <div class="film-card-info">
           <span class="film-card-name" title="${preset.name}">${preset.name}</span>
-          <span class="badge ${badgeClass} film-card-tag">${brandTag}</span>
+          <span class="film-card-cam-sub" title="${camTheme.cameraName}">${camTheme.cameraName}</span>
+          <span class="badge ${badgeClass}" style="align-self:flex-start; margin-top:2px;">${camTheme.brand}</span>
         </div>
         <div class="film-card-active-check">✓</div>
       `;
@@ -287,8 +434,8 @@ class EinkApp {
         shelf.querySelectorAll('.film-card').forEach(c => c.classList.remove('active'));
         card.classList.add('active');
         this.state.selectedPreset = preset;
+        this.applyCameraTheme(preset.id);
 
-        // Smoothly center the selected card inside the horizontal shelf without scrolling the page
         const shelfRect = shelf.getBoundingClientRect();
         const cardRect = card.getBoundingClientRect();
         const offset = (cardRect.left + cardRect.width / 2) - (shelfRect.left + shelfRect.width / 2);
@@ -448,9 +595,62 @@ class EinkApp {
       });
     });
 
-    // 10. Upload photo from device
+    // 10. Upload photo from device (inside sampleSheet)
     const fileInput = document.getElementById('fileUploadInput');
-    document.getElementById('btnUploadPhoto').addEventListener('click', () => fileInput.click());
+    const sampleSheet = document.getElementById('sampleSheet');
+    const darkroomModal = document.getElementById('darkroomModal');
+    const moreSheet = document.getElementById('moreSheet');
+
+    setupDialogDismiss(sampleSheet);
+    setupDialogDismiss(darkroomModal);
+    setupDialogDismiss(moreSheet);
+
+    document.getElementById('btnCameraPicker').addEventListener('click', () => {
+      this.switchTab('tabPresets');
+      darkroomModal.showModal();
+    });
+
+    document.getElementById('btnOpenDarkroom').addEventListener('click', () => {
+      darkroomModal.showModal();
+    });
+
+    document.getElementById('btnCloseDarkroomModal').addEventListener('click', () => {
+      closeTopLayer(darkroomModal);
+    });
+
+    document.getElementById('btnQuickGallery').addEventListener('click', () => {
+      sampleSheet.showModal();
+    });
+
+    document.getElementById('btnCloseSampleSheet').addEventListener('click', () => {
+      closeTopLayer(sampleSheet);
+    });
+
+    document.getElementById('btnMoreMenu').addEventListener('click', () => {
+      moreSheet.showModal();
+    });
+
+    document.getElementById('btnCloseMoreSheet').addEventListener('click', () => {
+      closeTopLayer(moreSheet);
+    });
+
+    document.getElementById('btnOpenCameraTabFromMore').addEventListener('click', async () => {
+      await closeTopLayer(moreSheet);
+      this.switchTab('tabPresets');
+      darkroomModal.showModal();
+    });
+
+    document.getElementById('btnOpenHistoryFromAlbum').addEventListener('click', async () => {
+      await closeTopLayer(sampleSheet);
+      this.renderHistoryList();
+      document.getElementById('historyModal').showModal();
+    });
+
+    document.getElementById('btnUploadPhoto').addEventListener('click', async () => {
+      await closeTopLayer(sampleSheet);
+      fileInput.click();
+    });
+
     fileInput.addEventListener('change', async (e) => {
       if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0];
@@ -478,13 +678,8 @@ class EinkApp {
     });
 
     // 11. Sample Picker Action Sheet
-    const sampleSheet = document.getElementById('sampleSheet');
-    document.getElementById('btnOpenSamples').addEventListener('click', () => {
-      sampleSheet.showModal();
-    });
-
-    const selectSample = (src, label) => {
-      sampleSheet.close();
+    const selectSample = async (src, label) => {
+      await closeTopLayer(sampleSheet);
       this.resetTransform();
       this.state.imageSrc = src;
       this.loadImage(src);
@@ -503,26 +698,30 @@ class EinkApp {
       }
     });
 
-    // 13. NFC Flash CTA
-    document.getElementById('btnTriggerFlash').addEventListener('click', () => {
+    // 13. Iconic Shutter Button -> Blink & NFC Flash CTA
+    document.getElementById('btnTriggerFlash').addEventListener('click', async () => {
       if (!this.state.packed30kPayload) {
         this.renderPipeline(false);
       }
+      await this.simulator.triggerShutterBlink();
       this.nfcModal.open(this.state.packed30kPayload);
     });
 
-    // 14. Save to History Button
+    // 14. Save to History Button (inside moreSheet)
     document.getElementById('btnSaveToHistory').addEventListener('click', async () => {
       const btn = document.getElementById('btnSaveToHistory');
-      btn.textContent = '⏳ 保存中...';
+      const labelSpan = btn.querySelector('span:first-child');
+      if (labelSpan) labelSpan.textContent = '⏳ 正在保存至相册...';
       try {
         await this.saveCurrentArtworkToHistory();
-        btn.textContent = '✓ 已存入';
+        if (labelSpan) labelSpan.textContent = '✓ 已存入历史相册';
         this.showToast('💾 作品及暗室调色参数已存入历史相册');
-        setTimeout(() => { btn.textContent = '💾 存入相册'; }, 1800);
+        setTimeout(() => {
+          if (labelSpan) labelSpan.textContent = '💾 保存当前作品到历史相册';
+        }, 1800);
       } catch (err) {
         this.showToast('⚠️ 保存失败: ' + err.message);
-        btn.textContent = '💾 存入相册';
+        if (labelSpan) labelSpan.textContent = '💾 保存当前作品到历史相册';
       }
     });
   }
@@ -532,8 +731,14 @@ class EinkApp {
     const loginModal = document.getElementById('loginModal');
     const profileModal = document.getElementById('profileModal');
     const historyModal = document.getElementById('historyModal');
+    const moreSheet = document.getElementById('moreSheet');
+
+    setupDialogDismiss(loginModal);
+    setupDialogDismiss(profileModal);
+    setupDialogDismiss(historyModal);
 
     const openProfileOrDevices = async () => {
+      await closeTopLayer(moreSheet);
       const user = getCurrentUser();
       document.getElementById('inputProfileNickname').value = user?.nickname || '胶片摄影师';
       document.getElementById('profilePhone').textContent = user?.phone ? `+86 ${user.phone}` : '离线体验模式（点击登录可同步云端）';
@@ -542,23 +747,24 @@ class EinkApp {
       profileModal.showModal();
     };
 
-    // Top bar Auth button click
-    document.getElementById('btnUserAuth').addEventListener('click', () => {
+    // Auth button inside moreSheet
+    document.getElementById('btnUserAuth').addEventListener('click', async () => {
       if (isLoggedIn()) {
         openProfileOrDevices();
       } else {
+        await closeTopLayer(moreSheet);
         loginModal.showModal();
       }
     });
 
-    // Top bar Device Pill click -> opens Hardware Device Center directly
+    // Device Pill inside moreSheet -> opens Hardware Device Center directly
     document.getElementById('deviceStatusPill').addEventListener('click', () => {
       openProfileOrDevices();
     });
 
-    document.getElementById('btnCloseLoginModal').addEventListener('click', () => loginModal.close());
-    document.getElementById('btnCloseProfileModal').addEventListener('click', () => profileModal.close());
-    document.getElementById('btnCloseHistoryModal').addEventListener('click', () => historyModal.close());
+    document.getElementById('btnCloseLoginModal').addEventListener('click', () => closeTopLayer(loginModal));
+    document.getElementById('btnCloseProfileModal').addEventListener('click', () => closeTopLayer(profileModal));
+    document.getElementById('btnCloseHistoryModal').addEventListener('click', () => closeTopLayer(historyModal));
 
     // Save User Nickname
     document.getElementById('btnSaveNickname').addEventListener('click', async () => {
@@ -638,7 +844,7 @@ class EinkApp {
       try {
         const { user } = await loginBySMS(phone, code);
         this.updateUserAuthUI();
-        loginModal.close();
+        await closeTopLayer(loginModal);
         this.showToast(`🎉 欢迎回来，${user.nickname}！云相册已同步`);
       } catch (err) {
         this.showToast('⚠️ 登录失败: ' + err.message);
@@ -649,15 +855,16 @@ class EinkApp {
     });
 
     // Logout
-    document.getElementById('btnLogout').addEventListener('click', () => {
+    document.getElementById('btnLogout').addEventListener('click', async () => {
       logout();
       this.updateUserAuthUI();
-      profileModal.close();
+      await closeTopLayer(profileModal);
       this.showToast('👋 已退出当前账号');
     });
 
-    // Open History Gallery
-    document.getElementById('btnOpenHistory').addEventListener('click', () => {
+    // Open History Gallery from moreSheet
+    document.getElementById('btnOpenHistory').addEventListener('click', async () => {
+      await closeTopLayer(moreSheet);
       this.renderHistoryList();
       historyModal.showModal();
     });
@@ -826,7 +1033,7 @@ class EinkApp {
 
       // Restore to Darkroom Studio
       card.querySelector('.btn-restore').addEventListener('click', async () => {
-        document.getElementById('historyModal').close();
+        await closeTopLayer(document.getElementById('historyModal'));
         await this.restoreArtwork(art);
         this.showToast(`✨ 已复原「${art.title}」的全部暗室参数`);
       });
@@ -862,6 +1069,7 @@ class EinkApp {
       const match = this.state.presets.find(p => p.id === art.filter_id);
       if (match) {
         this.state.selectedPreset = match;
+        this.applyCameraTheme(match.id);
         document.querySelectorAll('.film-card').forEach(c => {
           c.classList.toggle('active', c.dataset.id === match.id);
         });
@@ -1008,6 +1216,7 @@ class EinkApp {
   }
 
   async loadImage(src) {
+    this.updateAlbumThumb(src);
     return new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -1027,45 +1236,45 @@ class EinkApp {
     if (!this.state.currentImage) return;
 
     const ctx = this.offCtx;
-    ctx.clearRect(0, 0, 400, 300);
+    ctx.clearRect(0, 0, 300, 400);
 
-    let photoBox = { x: 0, y: 0, w: 400, h: 300 };
+    let photoBox = { x: 0, y: 0, w: 300, h: 400 };
     const presetName = this.state.selectedPreset ? this.state.selectedPreset.name : 'RNI ALL FILMS';
 
-    // 1. Frame Template Layout (Polaroid / Postcard / Gallery Matte / Full Bleed)
+    // 1. Vertical Portrait Frame Template Layout (Polaroid / Postcard / Gallery Matte / Full Bleed)
     if (this.state.frameTemplate === 'polaroid') {
       ctx.fillStyle = '#F5F2EB';
-      ctx.fillRect(0, 0, 400, 300);
-      photoBox = { x: 16, y: 14, w: 368, h: 242 };
+      ctx.fillRect(0, 0, 300, 400);
+      photoBox = { x: 16, y: 16, w: 268, h: 326 };
 
       ctx.fillStyle = '#181818';
       ctx.font = 'bold 11px Inter, sans-serif';
       ctx.textAlign = 'center';
       const caption = this.state.customSubtitle.trim() || `${presetName.toUpperCase()} · 2026`;
-      ctx.fillText(caption, 200, 278);
+      ctx.fillText(caption, 150, 374);
     } else if (this.state.frameTemplate === 'postcard') {
       ctx.fillStyle = '#F5F2EB';
-      ctx.fillRect(0, 0, 400, 300);
-      photoBox = { x: 12, y: 12, w: 376, h: 250 };
+      ctx.fillRect(0, 0, 300, 400);
+      photoBox = { x: 12, y: 12, w: 276, h: 342 };
 
       ctx.fillStyle = '#181818';
       ctx.font = 'bold 10px JetBrains Mono, monospace';
       ctx.textAlign = 'left';
       const leftTxt = this.state.customSubtitle.trim() || presetName.toUpperCase();
-      ctx.fillText(leftTxt, 14, 282);
+      ctx.fillText(leftTxt, 14, 378);
 
       ctx.fillStyle = '#D8262C';
       ctx.textAlign = 'right';
-      ctx.fillText('35MM · F/2.8 · ISO 400', 386, 282);
+      ctx.fillText('35MM · F/2.8', 286, 378);
     } else if (this.state.frameTemplate === 'gallery') {
       ctx.fillStyle = '#F5F2EB';
-      ctx.fillRect(0, 0, 400, 300);
-      photoBox = { x: 28, y: 24, w: 344, h: 252 };
+      ctx.fillRect(0, 0, 300, 400);
+      photoBox = { x: 24, y: 28, w: 252, h: 344 };
 
       // Subtle inner museum passepartout line
       ctx.strokeStyle = '#181818';
       ctx.lineWidth = 1;
-      ctx.strokeRect(25, 21, 350, 258);
+      ctx.strokeRect(21, 25, 258, 350);
     }
 
     // 2. Render Image with Rotation, Flip, Zoom and Pan
@@ -1075,7 +1284,7 @@ class EinkApp {
     this.simulator.setOriginalImage(this.offscreenCanvas);
 
     // 3. Extract Pixel Buffer
-    let pixels = ctx.getImageData(0, 0, 400, 300);
+    let pixels = ctx.getImageData(0, 0, 300, 400);
 
     // 4. Apply RNI 3D LUT
     if (this.state.selectedPreset && this.state.selectedPreset.cube_file) {
@@ -1118,7 +1327,7 @@ class EinkApp {
   }
 
   computeDither() {
-    const pixels = this.offCtx.getImageData(0, 0, 400, 300);
+    const pixels = this.offCtx.getImageData(0, 0, 300, 400);
     if (this.state.ditherAlgorithm === 'atkinson') {
       return ditherAtkinson(pixels, this.state.redDamper);
     } else if (this.state.ditherAlgorithm === 'floyd') {

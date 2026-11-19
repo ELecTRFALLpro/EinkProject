@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="320" height="320">
+
+  <defs>
+    <!-- Hand-drawn organic pen/brush contour wobble -->
+    <filter id="handInk" x="-8%" y="-8%" width="116%" height="116%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.048" numOctaves="3" seed="66" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.1" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <!-- Tactile gouache / cold-press watercolor paper grain -->
+    <filter id="paperGrain" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" seed="66" result="grain"/>
+      <feColorMatrix type="matrix" values="
+        0 0 0 0 0.20
+        0 0 0 0 0.16
+        0 0 0 0 0.12
+        0 0 0 0.14 0" in="grain" result="softGrain"/>
+      <feComposite in="softGrain" in2="SourceGraphic" operator="atop"/>
+    </filter>
+    <!-- Soft painterly gouache lighting wash -->
+    <linearGradient id="gouacheSheen" x1="15%" y1="0%" x2="85%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="48%" stop-color="#FFFFFF" stop-opacity="0.0"/>
+      <stop offset="100%" stop-color="#221912" stop-opacity="0.16"/>
+    </linearGradient>
+    <!-- Leatherette hand-stippled texture -->
+    <pattern id="leatherTex" width="7" height="7" patternUnits="userSpaceOnUse">
+      <circle cx="1.8" cy="2" r="0.95" fill="#18120E" fill-opacity="0.18"/>
+      <circle cx="5.2" cy="4.8" r="0.85" fill="#18120E" fill-opacity="0.14"/>
+      <circle cx="4.8" cy="1.4" r="0.65" fill="#FFFDF8" fill-opacity="0.08"/>
+      <circle cx="1.5" cy="5.5" r="0.6" fill="#FFFDF8" fill-opacity="0.06"/>
+    </pattern>
+    <!-- Hand-drawn cross-hatch shadow pattern -->
+    <pattern id="sketchHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(-28)">
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#231D18" stroke-opacity="0.22" stroke-width="1.1"/>
+    </pattern>
+    <!-- Studio lens glass radial gradients -->
+    <radialGradient id="lensGlass" cx="36%" cy="33%" r="68%">
+      <stop offset="0%" stop-color="#486B8A"/>
+      <stop offset="36%" stop-color="#1E2C3B"/>
+      <stop offset="72%" stop-color="#0E1319"/>
+      <stop offset="100%" stop-color="#050709"/>
+    </radialGradient>
+    <radialGradient id="lensGlassWarm" cx="36%" cy="33%" r="68%">
+      <stop offset="0%" stop-color="#7A5640"/>
+      <stop offset="38%" stop-color="#2C1F1A"/>
+      <stop offset="75%" stop-color="#140E0C"/>
+      <stop offset="100%" stop-color="#070505"/>
+    </radialGradient>
+    <radialGradient id="lensGlassRose" cx="36%" cy="33%" r="68%">
+      <stop offset="0%" stop-color="#7B5065"/>
+      <stop offset="38%" stop-color="#2B1C25"/>
+      <stop offset="76%" stop-color="#130C10"/>
+      <stop offset="100%" stop-color="#070406"/>
+    </radialGradient>
+    <radialGradient id="lensGlassGreen" cx="36%" cy="33%" r="68%">
+      <stop offset="0%" stop-color="#35785D"/>
+      <stop offset="38%" stop-color="#163227"/>
+      <stop offset="76%" stop-color="#0B1813"/>
+      <stop offset="100%" stop-color="#050A08"/>
+    </radialGradient>
+    <pattern id="flashRibs" width="6" height="6" patternUnits="userSpaceOnUse">
+      <rect width="6" height="6" fill="#ECEAE4"/>
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#B7B2A8" stroke-width="1.5"/>
+      <line x1="0" y1="3" x2="6" y2="3" stroke="#FFFFFF" stroke-width="0.9" stroke-opacity="0.75"/>
+    </pattern>
+  </defs>
+
+  <g filter="url(#handInk)">
+    
+  
+    <ellipse cx="160" cy="266" rx="116" ry="10" fill="url(#sketchHatch)"/>
+    <ellipse cx="160" cy="264" rx="112" ry="9" fill="#231B14" fill-opacity="0.16"/>
+    
+  <rect x="64" y="64" width="26" height="14" rx="3.5" fill="#DCE0E4" stroke="#202124" stroke-width="2.1"/><line x1="68" y1="66" x2="68" y2="76" stroke="#202124" stroke-opacity="0.32" stroke-width="1.2"/><line x1="73" y1="66" x2="73" y2="76" stroke="#202124" stroke-opacity="0.32" stroke-width="1.2"/><line x1="78" y1="66" x2="78" y2="76" stroke="#202124" stroke-opacity="0.32" stroke-width="1.2"/><line x1="83" y1="66" x2="83" y2="76" stroke="#202124" stroke-opacity="0.32" stroke-width="1.2"/>
+  <rect x="104" y="58" width="32" height="20" rx="3.5" fill="#CFD4DA" stroke="#202124" stroke-width="2.1"/><line x1="108" y1="60" x2="108" y2="76" stroke="#202124" stroke-opacity="0.32" stroke-width="1.2"/><line x1="113" y1="60" x2="113" y2="76" stroke="#202124" stroke-opacity="0.32" stroke-width="1.2"/><line x1="118" y1="60" x2="118" y2="76" stroke="#202124" stroke-opacity="0.32" stroke-width="1.2"/><line x1="123" y1="60" x2="123" y2="76" stroke="#202124" stroke-opacity="0.32" stroke-width="1.2"/><line x1="128" y1="60" x2="128" y2="76" stroke="#202124" stroke-opacity="0.32" stroke-width="1.2"/><line x1="133" y1="60" x2="133" y2="76" stroke="#202124" stroke-opacity="0.32" stroke-width="1.2"/>
+  <rect x="148" y="66" width="32" height="12" rx="3" fill="#CFD4DA" stroke="#202124" stroke-width="2"/>
+
+  <rect x="42" y="78" width="236" height="50" rx="12" fill="#E5E7EB" stroke="#202124" stroke-width="2.8" filter="url(#paperGrain)"/>
+  <rect x="42" y="120" width="236" height="128" rx="14" fill="#B8392F" stroke="#202124" stroke-width="2.8" filter="url(#paperGrain)"/>
+  <rect x="42" y="120" width="236" height="128" rx="14" fill="url(#leatherTex)"/>
+  <path d="M42 226 L278 226 L278 234 Q278 248 264 248 L56 248 Q42 248 42 234 Z" fill="#D9DDE2" stroke="#202124" stroke-width="2.5"/>
+  <rect x="42" y="78" width="236" height="170" rx="14" fill="url(#gouacheSheen)"/>
+  <path d="M52 86 L268 86" stroke="#FFFDF8" stroke-opacity="0.7" stroke-width="3" stroke-linecap="round"/>
+
+  <rect x="220" y="87" width="38" height="26" rx="5" fill="#1C1D20" stroke="#202124" stroke-width="2"/>
+  <rect x="226" y="92" width="26" height="16" rx="3" fill="url(#lensGlass)"/>
+  <rect x="122" y="92" width="22" height="18" rx="4" fill="#1C1D20" stroke="#202124" stroke-width="1.8"/>
+  <circle cx="80" cy="144" r="7.5" fill="#F3B336" stroke="#202124" stroke-width="2"/>
+
+  
+    <!-- Sketchy Gouache Cast Shadow Under Lens -->
+    <ellipse cx="164" cy="185" rx="56" ry="55" fill="url(#sketchHatch)"/>
+    <ellipse cx="164" cy="183" rx="54" ry="54" fill="#1C1612" fill-opacity="0.16"/>
+    <!-- Outer Metal Barrel -->
+    <circle cx="162" cy="178" r="52" fill="#E2E5E9" stroke="#231D18" stroke-width="2.8" filter="url(#paperGrain)"/>
+    <circle cx="162" cy="178" r="52" fill="url(#gouacheSheen)"/>
+    <path d="M 124.6 156.2 A 49.0 49.0 0 0 1 191.1 144.7"
+          fill="none" stroke="#FFFDF8" stroke-opacity="0.58" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="162" cy="178" r="46.5" fill="none" stroke="#C83228" stroke-width="3.4"/>
+    <!-- Stepped Inner Barrel -->
+    <circle cx="162" cy="178" r="40.6" fill="#232528" stroke="#191512" stroke-width="2.2"/>
+    <circle cx="162" cy="178" r="33.8" fill="#151414" stroke="#6E6860" stroke-width="1.3" stroke-dasharray="2.4 2.8"/>
+    <!-- Hand-painted Glass Dome -->
+    <circle cx="162" cy="178" r="28.1" fill="url(#lensGlassWarm)" stroke="#0D0B0A" stroke-width="2"/>
+    <!-- Expressive Brush Glints -->
+    <path d="M 144.8 169.7 A 18.7 18.7 0 0 1 169.3 159.3"
+          fill="none" stroke="#FFFDF8" stroke-opacity="0.78" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M 151.6 193.6 A 16.6 16.6 0 0 0 171.4 191.5"
+          fill="none" stroke="#9BD0EA" stroke-opacity="0.45" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="155.8" cy="172.8" r="2.9" fill="#FFFFFF" fill-opacity="0.88"/>
+    
+
+  </g>
+</svg>

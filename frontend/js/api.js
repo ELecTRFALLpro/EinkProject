@@ -166,7 +166,7 @@ function getDefaultOfflineDevices() {
   try {
     const raw = localStorage.getItem(OFFLINE_DEVICES_KEY);
     if (raw) return JSON.parse(raw);
-  } catch (_) {}
+  } catch (_) { }
   const initial = [
     {
       id: 'dev_demo_401a',
@@ -185,14 +185,14 @@ function getDefaultOfflineDevices() {
 function saveOfflineDevices(list) {
   try {
     localStorage.setItem(OFFLINE_DEVICES_KEY, JSON.stringify(list));
-  } catch (_) {}
+  } catch (_) { }
 }
 
 export function getActiveDevice() {
   try {
     const raw = localStorage.getItem(ACTIVE_DEVICE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch (_) {}
+  } catch (_) { }
   const list = getDefaultOfflineDevices();
   return list[0] || {
     id: 'dev_demo_401a',
@@ -207,7 +207,7 @@ export function setActiveDevice(dev) {
   if (!dev) return;
   try {
     localStorage.setItem(ACTIVE_DEVICE_KEY, JSON.stringify(dev));
-  } catch (_) {}
+  } catch (_) { }
 }
 
 export async function fetchMyDevices() {
@@ -307,7 +307,7 @@ export async function updateDeviceInfo(deviceId, nickname, location) {
         setActiveDevice(data.data.device);
         return data.data.device;
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   const list = getDefaultOfflineDevices().map(d => {
@@ -330,7 +330,7 @@ export async function unbindDevice(deviceId) {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-    } catch (_) {}
+    } catch (_) { }
   }
   const list = getDefaultOfflineDevices().filter(d => d.id !== deviceId);
   saveOfflineDevices(list);
@@ -448,7 +448,7 @@ export async function updateArtworkTitle(id, title, subtitle = '') {
       });
       const data = await res.json();
       if (data.code === 0 && data.data) return data.data.artwork;
-    } catch (_) {}
+    } catch (_) { }
   }
   return null;
 }
@@ -477,7 +477,7 @@ export async function recordArtworkFlashed(id, deviceId = '') {
         },
         body: JSON.stringify({ device_id: deviceId })
       });
-    } catch (_) {}
+    } catch (_) { }
   }
 }
 
@@ -530,7 +530,7 @@ function deleteOfflineArtwork(id) {
     let list = getOfflineArtworks();
     list = list.filter(item => item.id !== id);
     localStorage.setItem(OFFLINE_ARTWORKS_KEY, JSON.stringify(list));
-  } catch (_) {}
+  } catch (_) { }
 }
 
 // 5. Config & Presets

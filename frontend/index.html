@@ -5,89 +5,154 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="E-Ink Photo Frame Darkroom Studio - 4.01寸四色墨水屏复古胶片调色、相册历史与无线NFC烧录">
-  <title>E-Ink Darkroom Studio</title>
-  
+  <meta name="description" content="E-Ink Polaroid Darkroom - 拟物拍立得墨水屏相框暗室 · 3D LUT相机换肤与无线NFC烧录">
+  <title>E-Ink Polaroid Studio</title>
+
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-  <div class="ios-app-container">
-    <!-- Dynamic Island Toast Notification -->
+  <!-- Skeuomorphic Instant Camera First Screen -->
+  <div class="camera-shell" id="cameraShell" data-cam-tone="light">
+    <!-- Floating Toast Notification -->
     <div id="iosToast" class="ios-toast" role="status" aria-live="polite"></div>
 
-    <!-- 1. iOS Top Navigation Bar -->
-    <header class="ios-nav-bar">
-      <div class="nav-left">
-        <input type="file" id="fileUploadInput" accept="image/*" style="display: none;">
-        <button class="ios-icon-btn" id="btnUploadPhoto" title="从手机相册选择照片">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-          </svg>
-          相册
-        </button>
-        <button class="ios-icon-btn" id="btnOpenSamples" title="切换精选摄影样本">
-          ✨ 样张
-        </button>
+    <!-- Hidden File Input for Album Import -->
+    <input type="file" id="fileUploadInput" accept="image/*" style="display: none;">
+
+    <!-- 1. Top Pinned Polaroid Pattern & Camera Identity Nameplate -->
+    <header class="cam-header-plate">
+      <!-- Polaroid-inspired 5-stripe color bar pinned at top -->
+      <div class="cam-top-stripe" id="camTopStripe" aria-hidden="true">
+        <span class="stripe-seg" style="background: #FF3B30;"></span>
+        <span class="stripe-seg" style="background: #FF9500;"></span>
+        <span class="stripe-seg" style="background: #FFCC00;"></span>
+        <span class="stripe-seg" style="background: #34C759;"></span>
+        <span class="stripe-seg" style="background: #007AFF;"></span>
       </div>
 
-      <button type="button" class="device-badge-pill" id="deviceStatusPill" title="点击管理已绑定的墨水屏相框">
-        <span class="device-dot-pulse"></span>
-        <span id="navActiveDeviceText">4.01" NFC 就绪</span>
+      <!-- Camera Identity & Real Camera Image Selector (opens Camera/LUT sheet) -->
+      <button type="button" class="cam-selector-pill" id="btnCameraPicker" title="点击切换相机形象与 .cube 胶片 LUT">
+        <span class="cam-mini-pedestal">
+          <img id="activeCameraImg" class="cam-mini-img" src="assets/cameras/polaroid_600.svg" alt="Polaroid OneStep 600">
+        </span>
+        <span class="cam-selector-text">
+          <span class="cam-model-title-row">
+            <span id="activeCameraName">Polaroid OneStep 600</span>
+            <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true">
+              <path d="M4.2 6.2a.75.75 0 0 1 1.06 0L8 8.94l2.74-2.74a.75.75 0 1 1 1.06 1.06l-3.27 3.27a.75.75 0 0 1-1.06 0L4.2 7.26a.75.75 0 0 1 0-1.06z"/>
+            </svg>
+          </span>
+          <span class="cam-lut-sub-row">
+            <span id="activeLutShort">POLAROID 600 · LUT</span>
+            <span class="lut-tone-dots" id="activeLutDots" aria-hidden="true">
+              <span class="lut-dot" style="background:#F4E3C1"></span>
+              <span class="lut-dot" style="background:#E38B4F"></span>
+              <span class="lut-dot" style="background:#C74437"></span>
+              <span class="lut-dot" style="background:#2B211C"></span>
+            </span>
+          </span>
+        </span>
       </button>
-
-      <div class="nav-right">
-        <!-- History Records Button -->
-        <button class="ios-icon-btn" id="btnOpenHistory" title="查看用户上传与创作的历史相片记录">
-          📚 历史
-        </button>
-        <!-- User Login / Profile Pill Button -->
-        <button class="ios-icon-btn" id="btnUserAuth" title="用户登录与个人中心">
-          👤 登录
-        </button>
-      </div>
     </header>
 
-    <!-- 2. Central E-Ink Frame & Gesture Touch Stage -->
-    <main class="ios-viewport-stage">
+    <!-- 2. Central Rectangular Optical Viewfinder (4:3 E-Ink Screen) -->
+    <main class="viewfinder-stage">
       <div id="frameSimContainer" class="frame-sim-host">
         <!-- Rendered by FrameSimulator component -->
       </div>
-
-      <!-- Horizontally Scroll-Snapping Quick Transform & Action Bar -->
-      <div class="quick-transform-bar" role="region" aria-label="画面几何变换与快捷操作">
-        <button class="transform-chip" id="btnRotateCCW" title="逆时针旋转 90 度">
-          ↺ 90°
-        </button>
-        <button class="transform-chip" id="btnRotateCW" title="顺时针旋转 90 度">
-          ↻ 90°
-        </button>
-        <button class="transform-chip" id="btnFlipH" title="水平镜像翻转">
-          ⇄ 翻转
-        </button>
-        <button class="transform-chip" id="btnToggleSplit" title="原图与墨水屏分屏对比">
-          ◨ 对比
-        </button>
-        <button class="transform-chip active" id="btnToggleTexture" title="纸面反光微质感">
-          ▤ 纸质
-        </button>
-        <button class="transform-chip chip-accent" id="btnSaveToHistory" title="保存当前调色作品到相册历史">
-          💾 存入相册
-        </button>
-      </div>
     </main>
 
-    <!-- 3. iOS Segmented Tab Bar -->
+    <!-- 3. Minimalist Skeuomorphic Camera Controls (Below Viewfinder) -->
+    <footer class="cam-controls-deck">
+      <!-- 4 Subtle Circular Tactile Micro-Buttons -->
+      <div class="cam-micro-row" role="group" aria-label="快捷取景控制">
+        <button type="button" class="cam-micro-btn" id="btnRotateCCW" title="逆时针旋转 90°" aria-label="旋转 90 度">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
+
+        <button type="button" class="cam-micro-btn" id="btnToggleSplit" title="原图与墨水屏分屏对比" aria-label="分屏对比">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="16" rx="2"/>
+            <line x1="12" y1="4" x2="12" y2="20"/>
+            <path d="M12 4h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7V4z" fill="currentColor" fill-opacity="0.22" stroke="none"/>
+          </svg>
+        </button>
+
+        <button type="button" class="cam-micro-btn" id="btnTriggerRefresh" title="模拟四色墨水屏刷新" aria-label="模拟刷屏">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </button>
+
+        <button type="button" class="cam-micro-btn" id="btnOpenDarkroom" title="打开相机库与暗室调色" aria-label="暗室调色与相机选择">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="21" x2="4" y2="14"/>
+            <line x1="4" y1="10" x2="4" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12" y2="3"/>
+            <line x1="20" y1="21" x2="20" y2="16"/>
+            <line x1="20" y1="12" x2="20" y2="3"/>
+            <line x1="1" y1="14" x2="7" y2="14"/>
+            <line x1="9" y1="8" x2="15" y2="8"/>
+            <line x1="17" y1="16" x2="23" y2="16"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Bottom Primary Shutter Dock: Album Thumb | Iconic Red Shutter | Mechanical Counter -->
+      <div class="cam-shutter-dock">
+        <button type="button" class="cam-album-btn" id="btnQuickGallery" title="选择照片、样张或历史相册" aria-label="照片与相册">
+          <img id="quickAlbumThumb" class="cam-album-thumb" src="assets/samples/sunset.png" alt="当前照片缩略图">
+        </button>
+
+        <div class="cam-shutter-collar">
+          <button type="button" class="cam-shutter-btn" id="btnTriggerFlash" title="按下快门 · NFC 烧录至墨水屏相框" aria-label="烧录至相框"></button>
+        </div>
+
+        <button type="button" class="cam-counter-btn" id="btnMoreMenu" title="设备中心、历史相册与更多设置" aria-label="机械计数与更多选项">
+          <span class="cam-counter-led" id="nfcReadyLed"></span>
+          <span class="cam-counter-num" id="camCounterNum">11</span>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 4. Darkroom & Camera Bag Bottom Sheet (Cameras/LUTs, Toning Sliders, Framing/Dither) -->
+  <dialog id="darkroomModal" class="sheet-dialog" closedby="any" aria-labelledby="darkroomModalTitle">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header-row">
+      <h2 class="sheet-title" id="darkroomModalTitle">📷 相机与暗室工作台</h2>
+      <button type="button" class="modal-close-btn" id="btnCloseDarkroomModal" aria-label="关闭">✕</button>
+    </div>
+
+    <!-- Segmented Tab Bar -->
     <nav class="ios-segmented-tabs" aria-label="暗室功能切换">
-      <button class="tab-btn active" data-tab="tabPresets">🎞️ 胶片滤镜</button>
-      <button class="tab-btn" data-tab="tabToning">🎨 基础调色</button>
-      <button class="tab-btn" data-tab="tabFraming">🖼️ 画框算法</button>
+      <button type="button" class="tab-btn active" data-tab="tabPresets">📷 相机 / LUT</button>
+      <button type="button" class="tab-btn" data-tab="tabToning">🎨 基础调色</button>
+      <button type="button" class="tab-btn" data-tab="tabFraming">🖼️ 画框算法</button>
     </nav>
 
-    <!-- 4. Interactive Bottom Drawer Panels -->
     <div class="tab-drawer-wrapper" id="tabDrawerWrapper">
-      <!-- Tab 1: Film Presets (RNI All Films 5 Pro) -->
+      <!-- Tab 1: Real Camera Showcase + .cube LUT Selector -->
       <section class="tab-panel active" id="tabPresets">
+        <div class="active-camera-hero" id="activeCameraHero">
+          <div class="active-camera-stage">
+            <img id="heroCameraImg" src="assets/cameras/polaroid_600.svg" alt="Polaroid OneStep 600">
+          </div>
+          <div class="active-camera-meta">
+            <span class="active-camera-name" id="heroCameraName">Polaroid OneStep 600</span>
+            <span class="active-camera-note" id="heroCameraNote">经典彩虹拍立得 · 暖黄怀旧胶片感</span>
+            <div class="active-camera-lut-row">
+              <span class="active-lut-file" id="heroLutFile">polaroid_600.cube</span>
+              <span class="lut-tone-dots" id="heroLutDots"></span>
+            </div>
+          </div>
+        </div>
+
         <div class="film-category-bar" id="filmCategoryBar" role="region" aria-label="胶片分类筛选">
           <button type="button" class="cat-chip active" data-cat="all">全部 (12)</button>
           <button type="button" class="cat-chip" data-cat="instant">拍立得撕拉片</button>
@@ -95,15 +160,15 @@
           <button type="button" class="cat-chip" data-cat="film">风光正片</button>
           <button type="button" class="cat-chip" data-cat="mono">复古与黑白</button>
         </div>
-        <div class="film-shelf-scroll" id="filmShelfContainer" role="region" aria-label="RNI 胶片预设列表">
-          <!-- Dynamically populated -->
+
+        <div class="film-shelf-scroll" id="filmShelfContainer" role="region" aria-label="胶片相机预设列表">
+          <!-- Dynamically populated with camera image + LUT preview -->
         </div>
       </section>
 
-      <!-- Tab 2: Darkroom Sliders (Brightness, Contrast, Saturation, Warmth, Sharpness, Red Damper) -->
+      <!-- Tab 2: Darkroom Sliders -->
       <section class="tab-panel" id="tabToning">
         <div class="sliders-grid">
-          <!-- 1. Brightness -->
           <div class="slider-unit" data-default="0">
             <div class="slider-header-row" title="双击标题重置此项">
               <span>☀️ 曝光亮度</span>
@@ -112,7 +177,6 @@
             <input type="range" id="sliderBrightness" min="-50" max="50" step="1" value="0">
           </div>
 
-          <!-- 2. Contrast -->
           <div class="slider-unit" data-default="1.20">
             <div class="slider-header-row" title="双击标题重置此项">
               <span>◐ 对比度</span>
@@ -121,7 +185,6 @@
             <input type="range" id="sliderContrast" min="0.60" max="1.60" step="0.02" value="1.20">
           </div>
 
-          <!-- 3. Saturation -->
           <div class="slider-unit" data-default="1.15">
             <div class="slider-header-row" title="双击标题重置此项">
               <span>🎨 色彩饱和度</span>
@@ -130,7 +193,6 @@
             <input type="range" id="sliderSaturation" min="0.00" max="2.00" step="0.05" value="1.15">
           </div>
 
-          <!-- 4. Warmth -->
           <div class="slider-unit" data-default="0">
             <div class="slider-header-row" title="双击标题重置此项">
               <span>🌡️ 胶片色温</span>
@@ -139,7 +201,6 @@
             <input type="range" id="sliderWarmth" min="-50" max="50" step="1" value="0">
           </div>
 
-          <!-- 5. Sharpness -->
           <div class="slider-unit" data-default="40">
             <div class="slider-header-row" title="双击标题重置此项">
               <span>🗡️ 轮廓锐度</span>
@@ -148,7 +209,6 @@
             <input type="range" id="sliderSharpness" min="0" max="100" step="5" value="40">
           </div>
 
-          <!-- 6. Red Damper -->
           <div class="slider-unit" data-default="1.15">
             <div class="slider-header-row" title="双击标题重置此项">
               <span>🛡️ 防红斑阻尼</span>
@@ -160,7 +220,7 @@
 
         <div class="tone-actions-row">
           <span class="tone-hint-txt">💡 双击任意参数名可单独归零</span>
-          <button class="pill-btn pill-btn-ghost btn-reset-tone" id="btnResetTone">
+          <button type="button" class="pill-btn pill-btn-ghost btn-reset-tone" id="btnResetTone">
             重置全部影调
           </button>
         </div>
@@ -169,28 +229,24 @@
       <!-- Tab 3: Framing, Custom Subtitle, Dithering Algorithm & Histogram -->
       <section class="tab-panel" id="tabFraming">
         <div class="framing-stack">
-          <!-- 4 Frame Templates -->
           <div class="framing-row four-cols">
-            <button class="framing-btn active" data-frame="polaroid" id="btnFramePolaroid">拍立得留白</button>
-            <button class="framing-btn" data-frame="postcard" id="btnFramePostcard">明信片EXIF</button>
-            <button class="framing-btn" data-frame="gallery" id="btnFrameGallery">画廊宽卡纸</button>
-            <button class="framing-btn" data-frame="full" id="btnFrameFull">全屏无边框</button>
+            <button type="button" class="framing-btn active" data-frame="polaroid" id="btnFramePolaroid">拍立得留白</button>
+            <button type="button" class="framing-btn" data-frame="postcard" id="btnFramePostcard">明信片EXIF</button>
+            <button type="button" class="framing-btn" data-frame="gallery" id="btnFrameGallery">画廊宽卡纸</button>
+            <button type="button" class="framing-btn" data-frame="full" id="btnFrameFull">全屏无边框</button>
           </div>
 
-          <!-- Custom Caption / Subtitle Input for Polaroid & Postcard -->
           <div class="caption-edit-row" id="captionEditRow">
             <span class="caption-label">✒️ 画框题词</span>
             <input type="text" id="inputFrameSubtitle" class="caption-input" placeholder="留空自动使用胶片名 · 2026" maxlength="36">
           </div>
 
-          <!-- 3 Dithering Modes -->
           <div class="framing-row three-cols">
-            <button class="framing-btn active" data-dither="atkinson" id="btnAtkinson">Atkinson (人像)</button>
-            <button class="framing-btn" data-dither="floyd" id="btnFloyd">Floyd (风景平滑)</button>
-            <button class="framing-btn" data-dither="bayer" id="btnBayer">Bayer 4×4 (网点)</button>
+            <button type="button" class="framing-btn active" data-dither="atkinson" id="btnAtkinson">Atkinson (人像)</button>
+            <button type="button" class="framing-btn" data-dither="floyd" id="btnFloyd">Floyd (风景平滑)</button>
+            <button type="button" class="framing-btn" data-dither="bayer" id="btnBayer">Bayer 4×4 (网点)</button>
           </div>
 
-          <!-- 4-Color Pigment Histogram -->
           <div class="histogram-row">
             <div class="hist-chip">
               <div class="hist-swatch-sm" style="background: var(--color-eink-black);"></div>
@@ -216,24 +272,84 @@
         </div>
       </section>
     </div>
+  </dialog>
 
-    <!-- 5. Sticky Thumb Action Dock -->
-    <footer class="ios-bottom-dock">
-      <button class="pill-btn btn-refresh-wave" id="btnTriggerRefresh" title="模拟物理相框三阶段微胶囊电泳刷新">
-        ↻ 模拟刷屏
-      </button>
-      <button class="pill-btn pill-btn-primary btn-nfc-main" id="btnTriggerFlash">
-        ⚡ 烧录至相框 (NFC Flash)
-      </button>
-    </footer>
-  </div>
+  <!-- 5. Photo Source & Sample Picker Action Sheet -->
+  <dialog id="sampleSheet" class="sheet-dialog" closedby="any" aria-labelledby="sampleSheetTitle">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header-row">
+      <h2 class="sheet-title" id="sampleSheetTitle">📷 载入照片与样张</h2>
+      <button type="button" class="modal-close-btn" id="btnCloseSampleSheet" aria-label="关闭">✕</button>
+    </div>
 
-  <!-- 6. User Login Dialog (Native <dialog>) -->
-  <dialog id="loginModal" closedby="any">
+    <div class="sheet-options">
+      <button type="button" class="sheet-item" id="btnUploadPhoto">
+        <span>📱 从手机相册选择照片</span>
+        <span class="badge badge-green">导入原图</span>
+      </button>
+      <button type="button" class="sheet-item" id="btnOpenHistoryFromAlbum">
+        <span>📚 浏览我的历史相册作品</span>
+        <span class="badge badge-film">云端/本地</span>
+      </button>
+
+      <div class="sheet-section-label">精选摄影样张</div>
+      <button type="button" class="sheet-item" id="sheetSunset">
+        <span>🌅 落日余晖 (Sunset)</span>
+        <span class="badge badge-film">高动态风景</span>
+      </button>
+      <button type="button" class="sheet-item" id="sheetPortrait">
+        <span>👩 胶片人像 (Portrait)</span>
+        <span class="badge badge-film">温润东方肤色</span>
+      </button>
+      <button type="button" class="sheet-item" id="sheetStreet">
+        <span>🏙️ 复古街景 (Street)</span>
+        <span class="badge badge-film">红黄霓虹光影</span>
+      </button>
+    </div>
+  </dialog>
+
+  <!-- 6. More Tools, Hardware Device & Account Menu Sheet -->
+  <dialog id="moreSheet" class="sheet-dialog" closedby="any" aria-labelledby="moreSheetTitle">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header-row">
+      <h2 class="sheet-title" id="moreSheetTitle">⚙️ 相机设置与相框中心</h2>
+      <button type="button" class="modal-close-btn" id="btnCloseMoreSheet" aria-label="关闭">✕</button>
+    </div>
+
+    <div class="sheet-options">
+      <button type="button" class="sheet-item" id="deviceStatusPill">
+        <span>🖼️ 墨水屏相框管理 (<span id="navActiveDeviceText">4.01" NFC 就绪</span>)</span>
+        <span class="badge badge-green">白名单</span>
+      </button>
+      <button type="button" class="sheet-item" id="btnUserAuth">
+        <span>👤 账号登录与个人中心</span>
+        <span class="badge badge-film" id="moreAuthStatusText">未登录</span>
+      </button>
+      <button type="button" class="sheet-item" id="btnOpenHistory">
+        <span>📚 历史相片与暗室存档</span>
+        <span class="badge badge-film">查看记录</span>
+      </button>
+      <button type="button" class="sheet-item" id="btnSaveToHistory">
+        <span>💾 保存当前作品到历史相册</span>
+        <span class="badge badge-polaroid">含LUT参数</span>
+      </button>
+
+      <div class="sheet-section-label">取景器辅助控制</div>
+      <div class="sheet-grid-actions">
+        <button type="button" class="sheet-grid-btn" id="btnRotateCW">↻ 顺时针 90°</button>
+        <button type="button" class="sheet-grid-btn" id="btnFlipH">⇄ 水平镜像</button>
+        <button type="button" class="sheet-grid-btn active" id="btnToggleTexture">▤ 纸面反光纹理</button>
+        <button type="button" class="sheet-grid-btn" id="btnOpenCameraTabFromMore">📷 切换相机外观</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 7. User Login Dialog -->
+  <dialog id="loginModal" class="center-dialog" closedby="any" aria-labelledby="loginModalTitle">
     <div class="login-modal-content">
-      <button class="modal-close-btn" id="btnCloseLoginModal" aria-label="关闭">✕</button>
+      <button type="button" class="modal-close-btn" id="btnCloseLoginModal" aria-label="关闭">✕</button>
       <div class="login-header">
-        <h2 class="login-title">用户登录 / 注册</h2>
+        <h2 class="login-title" id="loginModalTitle">用户登录 / 注册</h2>
         <p class="login-subtitle">未注册手机号验证后自动创建账号并开启云端暗室相册</p>
       </div>
 
@@ -250,96 +366,69 @@
       </div>
 
       <div class="login-tip-text">
-        💡 开发调试环境下默认验证码为 <strong style="color: var(--color-accent-primary);">888888</strong>，可直接点击下方登录。
+        💡 开发调试环境下默认验证码为 <strong style="color: #FF7B6E;">888888</strong>，可直接点击下方登录。
       </div>
 
-      <button class="pill-btn pill-btn-primary full-width" id="btnSubmitLogin" style="height: 46px;">
+      <button type="button" class="pill-btn pill-btn-primary full-width" id="btnSubmitLogin" style="height: 46px;">
         登 录
       </button>
     </div>
   </dialog>
 
-  <!-- 7. User Profile & Hardware Device Center Dialog (Native <dialog>) -->
-  <dialog id="profileModal" closedby="any">
+  <!-- 8. User Profile & Hardware Device Center Dialog -->
+  <dialog id="profileModal" class="center-dialog" closedby="any" aria-labelledby="profileModalTitle">
     <div class="profile-modal-content">
-      <button class="modal-close-btn" id="btnCloseProfileModal" aria-label="关闭">✕</button>
-      <div class="sheet-handle"></div>
+      <button type="button" class="modal-close-btn" id="btnCloseProfileModal" aria-label="关闭">✕</button>
       <div class="profile-header-card">
         <div class="profile-avatar-big" id="profileAvatar">👤</div>
         <div class="profile-name-group" style="flex: 1;">
           <div style="display: flex; align-items: center; gap: 6px;">
-            <input type="text" id="inputProfileNickname" class="profile-nickname-input" placeholder="输入昵称" maxlength="20">
+            <input type="text" id="inputProfileNickname" class="profile-nickname-input" placeholder="输入昵称" maxlength="20" aria-label="用户昵称">
             <button type="button" class="sms-send-btn" id="btnSaveNickname">保存昵称</button>
           </div>
           <span class="profile-phone" id="profilePhone">未绑定手机号</span>
         </div>
       </div>
 
-      <!-- Bound Hardware Devices Management -->
       <div class="device-manager-section">
         <div class="device-section-header">
-          <span style="font-size: 13px; font-weight: 700;">🖼️ 我的墨水屏画框 (NFC 硬件白名单)</span>
-          <span class="badge badge-green">Ed25519 授权有效</span>
+          <span id="profileModalTitle" style="font-size: 13px; font-weight: 700;">🖼️ 我的墨水屏画框 (NFC 硬件白名单)</span>
+          <span class="badge badge-green">Ed25519 授权</span>
         </div>
-        <div id="boundDevicesList" class="bound-devices-list">
-          <!-- Dynamically populated -->
-        </div>
+        <div id="boundDevicesList" class="bound-devices-list"></div>
 
-        <!-- Bind New Hardware Device by UID -->
         <div class="bind-device-row">
-          <input type="text" id="inputBindDeviceUid" class="login-input" placeholder="输入或感应 NFC UID (如 04:8B:4C:D3:60:92:81)" value="04:8B:4C:D3:60:92:81">
+          <input type="text" id="inputBindDeviceUid" class="login-input" placeholder="输入或感应 NFC UID (如 04:8B:4C:D3:60:92:81)" value="04:8B:4C:D3:60:92:81" aria-label="NFC 硬件 UID">
           <button type="button" class="sms-send-btn" id="btnBindNewDevice">+ 绑定画框</button>
         </div>
       </div>
 
       <div style="display: flex; gap: 8px; margin-top: 4px;">
-        <button class="pill-btn pill-btn-ghost full-width" id="btnLogout">
+        <button type="button" class="pill-btn pill-btn-ghost full-width" id="btnLogout">
           退出当前账号
         </button>
       </div>
     </div>
   </dialog>
 
-  <!-- 8. History Artworks Gallery Sheet (Native <dialog>) -->
-  <dialog id="historyModal" closedby="any">
+  <!-- 9. History Artworks Gallery Sheet -->
+  <dialog id="historyModal" class="sheet-dialog" closedby="any" aria-labelledby="historyModalTitle">
     <div class="history-modal-content">
       <div class="sheet-handle"></div>
       <div class="history-header">
         <div class="history-title-group">
-          <span class="history-title">📚 我的历史照片与作品</span>
+          <h2 class="history-title" id="historyModalTitle">📚 我的历史照片与作品</h2>
           <span class="badge badge-film" id="historyCountBadge">0 张</span>
         </div>
-        <button class="modal-close-btn" id="btnCloseHistoryModal" style="position: static;" aria-label="关闭">✕</button>
+        <button type="button" class="modal-close-btn" id="btnCloseHistoryModal" aria-label="关闭">✕</button>
       </div>
 
-      <div class="history-scroll-area" id="historyListContainer">
-        <!-- Dynamically rendered -->
-      </div>
+      <div class="history-scroll-area" id="historyListContainer"></div>
     </div>
   </dialog>
 
-  <!-- 9. NFC Flash Dialog (Native <dialog>) -->
-  <dialog id="nfcModal" closedby="any"></dialog>
-
-  <!-- 10. Sample Photo Picker Action Sheet -->
-  <dialog id="sampleSheet" closedby="any">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title">选择预置摄影样张</div>
-    <div class="sheet-options">
-      <div class="sheet-item" id="sheetSunset">
-        <span>🌅 落日余晖 (Sunset)</span>
-        <span class="badge badge-film">高动态风景</span>
-      </div>
-      <div class="sheet-item" id="sheetPortrait">
-        <span>👩 胶片人像 (Portrait)</span>
-        <span class="badge badge-film">温润东方肤色</span>
-      </div>
-      <div class="sheet-item" id="sheetStreet">
-        <span>🏙️ 复古街景 (Street)</span>
-        <span class="badge badge-film">红黄霓虹光影</span>
-      </div>
-    </div>
-  </dialog>
+  <!-- 10. NFC Flash Dialog -->
+  <dialog id="nfcModal" class="center-dialog" closedby="any" aria-label="无线烧录至相框"></dialog>
 
   <!-- App Bootstrap -->
   <script type="module" src="js/app.js"></script>

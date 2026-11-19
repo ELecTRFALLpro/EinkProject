@@ -1,34 +1,59 @@
 /**
- * Spotify Dark Design System for EinkProject (iOS Mobile-First)
- * Base Tokens, Typography, Geometry, and Hardware Color Gamut
+ * Skeuomorphic Instant Camera Design System for EinkProject
+ * Warm Tactile Plastic, Brushed Metal, Molded Viewfinder & Dynamic LUT Camera Skinning
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
 :root {
-  /* Spotify Dark Palette */
-  --color-bg-base: #121212;
-  --color-bg-surface: #181818;
-  --color-bg-elevated: #242424;
-  --color-bg-card-hover: #282828;
-  --color-bg-overlay: rgba(0, 0, 0, 0.82);
+  /* Dynamic Camera Faceplate Defaults (Polaroid OneStep 600) */
+  --cam-body-top: #F6F2EA;
+  --cam-body-bottom: #E7DFD1;
+  --cam-body-border: #D5CBB8;
+  --cam-text-main: #24211E;
+  --cam-text-muted: #766E64;
+  --cam-bezel-outer: #262422;
+  --cam-bezel-inner: #141312;
+  --cam-shutter-top: #F44336;
+  --cam-shutter-bottom: #C62828;
+  --cam-shutter-ring: #E2D9C8;
+  --cam-accent: #E53935;
 
-  /* Spotify Green Accent */
-  --color-accent-primary: #1ED760;
-  --color-accent-hover: #1FDF64;
-  --color-accent-pressed: #169C46;
-  --color-accent-glow: rgba(30, 215, 96, 0.35);
+  /* Skeuomorphic Light Button Tokens */
+  --cam-btn-bg-top: #FFFFFF;
+  --cam-btn-bg-bottom: #EBE5DA;
+  --cam-btn-border: rgba(0, 0, 0, 0.12);
+  --cam-btn-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.14),
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    inset 0 1px 1px rgba(255, 255, 255, 0.95);
+  --cam-btn-shadow-active:
+    0 1px 2px rgba(0, 0, 0, 0.14),
+    inset 0 2px 4px rgba(0, 0, 0, 0.16);
+  --cam-well-bg: rgba(0, 0, 0, 0.06);
 
-  /* Typography Text Colors */
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #B3B3B3;
-  --color-text-tertiary: #727272;
-  --color-text-on-accent: #000000;
+  /* Sheet & Modal Darkroom Surface Tokens */
+  --color-bg-base: #151413;
+  --color-bg-surface: #1F1D1B;
+  --color-bg-elevated: #2A2724;
+  --color-bg-card-hover: #332F2B;
+  --color-bg-overlay: rgba(12, 11, 10, 0.72);
 
-  /* Subtle Borders & Dividers */
-  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  /* Accent */
+  --color-accent-primary: #E84A3A;
+  --color-accent-hover: #F25A4B;
+  --color-accent-pressed: #C43426;
+  --color-accent-glow: rgba(232, 74, 58, 0.35);
+
+  /* Typography for Modals/Sheets */
+  --color-text-primary: #F5F2EB;
+  --color-text-secondary: #B8B2A8;
+  --color-text-tertiary: #7D766D;
+  --color-text-on-accent: #FFFFFF;
+
+  /* Borders */
+  --color-border-subtle: rgba(255, 255, 255, 0.1);
   --color-border-focus: rgba(255, 255, 255, 0.25);
-  --color-border-accent: #1ED760;
 
   /* E-Ink 4-Color Hardware Palette */
   --color-eink-black: #181818;
@@ -44,20 +69,27 @@
 
   /* Geometry & Radii */
   --radius-pill: 9999px;
-  --radius-card: 14px;
-  --radius-inner: 10px;
-  --radius-modal: 24px;
-  --radius-bezel: 16px;
-
-  /* Shadows */
-  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.5);
-  --shadow-card-hover: 0 8px 30px rgba(0, 0, 0, 0.7);
-  --shadow-accent-glow: 0 0 20px var(--color-accent-glow);
-  --shadow-bezel: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --radius-card: 16px;
+  --radius-inner: 11px;
+  --radius-modal: 26px;
 
   /* Font Families */
   --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
   --font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, monospace;
+}
+
+/* Dark-body camera override (e.g., Ilford HP5 Stealth Monochrome) */
+.camera-shell[data-cam-tone="dark"] {
+  --cam-btn-bg-top: #37373B;
+  --cam-btn-bg-bottom: #262629;
+  --cam-btn-border: rgba(255, 255, 255, 0.12);
+  --cam-btn-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.45),
+    inset 0 1px 1px rgba(255, 255, 255, 0.14);
+  --cam-btn-shadow-active:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    inset 0 2px 5px rgba(0, 0, 0, 0.55);
+  --cam-well-bg: rgba(0, 0, 0, 0.35);
 }
 
 *, *::before, *::after {
@@ -70,7 +102,7 @@
 html, body {
   width: 100%;
   height: 100%;
-  background-color: var(--color-bg-base);
+  background-color: #121110;
   color: var(--color-text-primary);
   font-family: var(--font-main);
   font-size: 14px;
@@ -83,12 +115,11 @@ html, body {
   touch-action: manipulation;
 }
 
-/* Scrollbars */
 ::-webkit-scrollbar {
   display: none;
 }
 
-/* iOS Spring Buttons */
+/* Shared Tactile Pill Buttons (Inside Sheets & Modals) */
 .pill-btn {
   display: inline-flex;
   align-items: center;
@@ -100,7 +131,7 @@ html, body {
   border-radius: var(--radius-pill);
   border: none;
   cursor: pointer;
-  min-height: 44px; /* iOS Human Interface Minimum 44pt */
+  min-height: 44px;
   padding: 10px 20px;
   transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1),
               background-color 0.15s ease,
@@ -112,23 +143,19 @@ html, body {
 }
 
 .pill-btn:active {
-  transform: scale(0.95);
-  opacity: 0.9;
+  transform: scale(0.96);
+  opacity: 0.92;
 }
 
 .pill-btn-primary {
-  background-color: var(--color-accent-primary);
+  background: linear-gradient(180deg, var(--color-accent-hover) 0%, var(--color-accent-pressed) 100%);
   color: var(--color-text-on-accent);
-  box-shadow: 0 4px 16px rgba(30, 215, 96, 0.3);
-}
-
-.pill-btn-primary:active {
-  background-color: var(--color-accent-pressed);
+  box-shadow: 0 4px 16px var(--color-accent-glow), inset 0 1px 1px rgba(255, 255, 255, 0.3);
 }
 
 .pill-btn-secondary {
-  background-color: #FFFFFF;
-  color: #000000;
+  background-color: #F5F2EB;
+  color: #181818;
 }
 
 .pill-btn-ghost {
@@ -138,21 +165,7 @@ html, body {
 }
 
 .pill-btn-ghost:active {
-  background-color: rgba(255, 255, 255, 0.16);
-}
-
-.pill-btn-ghost.active {
-  background-color: rgba(30, 215, 96, 0.16);
-  color: var(--color-accent-primary);
-  border-color: var(--color-accent-primary);
-}
-
-.pill-btn-icon {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  padding: 0;
-  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 .pill-btn.full-width {
@@ -173,9 +186,9 @@ html, body {
 }
 
 .badge-green {
-  background-color: rgba(30, 215, 96, 0.18);
-  color: var(--color-accent-primary);
-  border: 1px solid rgba(30, 215, 96, 0.35);
+  background-color: rgba(52, 199, 89, 0.18);
+  color: #4CD964;
+  border: 1px solid rgba(52, 199, 89, 0.35);
 }
 
 .badge-film {
@@ -200,10 +213,71 @@ html, body {
 }
 
 .badge-mono {
-  background-color: rgba(255, 255, 255, 0.15);
-  color: #FFFFFF;
+  background-color: rgba(255, 255, 255, 0.14);
+  color: #E5E5E0;
 }
 
-.text-accent {
-  color: var(--color-accent-primary);
+/* Top-Layer Dialog Entry & Exit Animations (Modern Web Guidance) */
+dialog {
+  opacity: 0;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.24s;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  transition-behavior: allow-discrete;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog.sheet-dialog {
+    transform: translateY(28px);
+  }
+  dialog.center-dialog {
+    transform: scale(0.94);
+  }
+}
+
+dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0);
+  transition-property: background-color, display, overlay;
+  transition-duration: 0.24s;
+  transition-timing-function: ease-out;
+  transition-behavior: allow-discrete;
+}
+
+:is(dialog[open]):where(:not([data-closing])) {
+  opacity: 1;
+
+  @starting-style {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    transform: translateY(0) scale(1);
+
+    @starting-style {
+      transform: translateY(28px);
+    }
+  }
+
+  &::backdrop {
+    background-color: rgba(10, 9, 8, 0.65);
+
+    @starting-style {
+      background-color: rgba(0, 0, 0, 0);
+    }
+  }
+}
+
+:is(dialog.center-dialog[open]):where(:not([data-closing])) {
+  @media (prefers-reduced-motion: no-preference) {
+    @starting-style {
+      transform: scale(0.94);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog,
+  dialog::backdrop {
+    transition-duration: 0.1s;
+  }
 }
