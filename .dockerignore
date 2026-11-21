@@ -1,0 +1,9 @@
+.git
+.gitignore
+server/bin/
+server/*.db
+server/uploads/*
+deploy/
+docs/
+*.md
+.DS_Store

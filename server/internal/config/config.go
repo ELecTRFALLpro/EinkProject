@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -24,10 +25,24 @@ func Load() *Config {
 		ttlDays = 30
 	}
 
+	port := getEnv("PORT", ":8080")
+	if !strings.HasPrefix(port, ":") {
+		port = ":" + port
+	}
+
+	dbDriver := getEnv("DB_DRIVER", "sqlite")
+	dbDSN := getEnv("DB_DSN", "eink.db")
+
+	// 兼容主流云平台 (DigitalOcean / Render / Heroku / Railway / Zeabur) 自动注入的 DATABASE_URL
+	if envDBURL := os.Getenv("DATABASE_URL"); envDBURL != "" && os.Getenv("DB_DSN") == "" {
+		dbDriver = "postgres"
+		dbDSN = envDBURL
+	}
+
 	return &Config{
-		Port:                getEnv("PORT", ":8080"),
-		DBDriver:            getEnv("DB_DRIVER", "sqlite"),
-		DBDSN:               getEnv("DB_DSN", "eink.db"),
+		Port:                port,
+		DBDriver:            dbDriver,
+		DBDSN:               dbDSN,
 		JWTSecret:           getEnv("JWT_SECRET", "eink_jwt_secret_dev_2026"),
 		HMACSecret:          getEnv("HMAC_SECRET", "eink_uid_hmac_secret_dev_2026"),
 		CodeSecret:          getEnv("CODE_SECRET", "eink_activation_code_secret_2026"),

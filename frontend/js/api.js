@@ -4,9 +4,22 @@
  * Photo Upload, Artworks History, and robust Offline Fallback Mode.
  */
 
-const API_BASE = window.location.origin.includes('8080')
-  ? '/v1'
-  : 'http://localhost:8080/v1';
+function resolveApiBase() {
+  const { protocol, hostname, port } = window.location;
+  // Local file:// preview falls back to local Go server
+  if (protocol === 'file:') {
+    return 'http://localhost:8080/v1';
+  }
+  // If running a separate local static server (e.g. Live Server on localhost:5500), point to localhost:8080
+  const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1';
+  if (isLocalHost && port && port !== '8080') {
+    return 'http://localhost:8080/v1';
+  }
+  // Same-origin '/v1' for localhost:8080, LAN IP (192.168.x.x:8080), Cloudflare Tunnel, or any cloud HTTPS domain
+  return '/v1';
+}
+
+const API_BASE = resolveApiBase();
 
 const TOKEN_KEY = 'eink_jwt_token';
 const USER_KEY = 'eink_user_profile';
