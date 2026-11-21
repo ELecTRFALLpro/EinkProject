@@ -131,7 +131,38 @@ export class NFCModal {
     btnSimulate.addEventListener('click', () => {
       const activeDev = getActiveDevice();
       const targetUid = activeDev?.uid_full || '04:7A:3B:C2:59:81:80';
+
+      // If running inside Xcode iOS Native App Shell, invoke native CoreNFC / Haptic Bridge
+      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.einkNative) {
+        let b64 = '';
+        if (this.currentPayload) {
+          let bin = '';
+          for (let i = 0; i < this.currentPayload.byteLength; i++) {
+            bin += String.fromCharCode(this.currentPayload[i]);
+          }
+          b64 = btoa(bin);
+        }
+        window.webkit.messageHandlers.einkNative.postMessage({
+          action: 'startNFCFlash',
+          payloadBase64: b64,
+          ticket: this.currentTicket || ''
+        });
+        return;
+      }
+
       this.runVirtualHardwareTransfer(targetUid);
+    });
+
+    // Listen for native iOS CoreNFC callbacks
+    window.addEventListener('eink-native-nfc', (e) => {
+      const { type, data } = e.detail || {};
+      const activeDev = getActiveDevice();
+      const fallbackUid = activeDev?.uid_full || '04:7A:3B:C2:59:81:80';
+      if (type === 'detected' && data?.uid) {
+        this.runVirtualHardwareTransfer(data.uid);
+      } else if (type === 'fallback') {
+        this.runVirtualHardwareTransfer(fallbackUid);
+      }
     });
 
     const btnDownload = this.dialog.querySelector('#btnDownloadBin');

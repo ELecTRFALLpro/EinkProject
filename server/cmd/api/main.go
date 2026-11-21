@@ -111,6 +111,8 @@ func main() {
 		r.Static("/assets", frontendDir+"/assets")
 		r.StaticFile("/", frontendDir+"/index.html")
 		r.StaticFile("/index.html", frontendDir+"/index.html")
+		r.StaticFile("/manifest.webmanifest", frontendDir+"/manifest.webmanifest")
+		r.StaticFile("/apple-touch-icon.png", frontendDir+"/assets/icons/apple-touch-icon.png")
 		log.Printf("Frontend static SPA served from: %s", frontendDir)
 	}
 	r.Static("/uploads", uploadsDir)

@@ -4,23 +4,34 @@
  * Photo Upload, Artworks History, and robust Offline Fallback Mode.
  */
 
-function resolveApiBase() {
+const CUSTOM_API_KEY = 'eink_custom_api_base';
+
+export function getApiBase() {
+  const custom = localStorage.getItem(CUSTOM_API_KEY);
+  if (custom && custom.trim()) {
+    return custom.trim().replace(/\/+$/, '');
+  }
   const { protocol, hostname, port } = window.location;
-  // Local file:// preview falls back to local Go server
-  if (protocol === 'file:') {
+  // Inside Xcode iOS Native WKWebView (eink://app) or local file://
+  if (protocol === 'eink:' || protocol === 'file:' || protocol === 'capacitor:') {
     return 'http://localhost:8080/v1';
   }
-  // If running a separate local static server (e.g. Live Server on localhost:5500), point to localhost:8080
   const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1';
   if (isLocalHost && port && port !== '8080') {
     return 'http://localhost:8080/v1';
   }
-  // Same-origin '/v1' for localhost:8080, LAN IP (192.168.x.x:8080), Cloudflare Tunnel, or any cloud HTTPS domain
   return '/v1';
 }
 
-const API_BASE = resolveApiBase();
+export function setCustomApiBase(url) {
+  if (url && url.trim()) {
+    localStorage.setItem(CUSTOM_API_KEY, url.trim());
+  } else {
+    localStorage.removeItem(CUSTOM_API_KEY);
+  }
+}
 
+const API_BASE = getApiBase();
 const TOKEN_KEY = 'eink_jwt_token';
 const USER_KEY = 'eink_user_profile';
 const OFFLINE_ARTWORKS_KEY = 'eink_offline_artworks';
