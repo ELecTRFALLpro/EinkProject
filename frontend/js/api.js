@@ -193,6 +193,15 @@ function getDefaultOfflineDevices() {
   } catch (_) { }
   const initial = [
     {
+      id: 'dev_d0280c_061e',
+      uid_last4: '061E',
+      uid_full: '1E:57:06:1E',
+      profile_id: 'vA-400x300-bwry',
+      status: 'bound',
+      nickname: 'D0280C 四色墨水屏样机',
+      location: '研发桌面 (ISO 7816)'
+    },
+    {
       id: 'dev_demo_401a',
       uid_last4: '8180',
       uid_full: '04:7A:3B:C2:59:81:80',

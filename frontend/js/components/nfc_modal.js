@@ -45,7 +45,7 @@ export class NFCModal {
         <div class="nfc-telemetry-box">
           <div class="telemetry-row">
             <span class="telemetry-label">目标画框设备</span>
-            <span class="telemetry-value" id="telemetryDeviceName">客厅胡桃木相框 (UID: ...8180)</span>
+            <span class="telemetry-value" id="telemetryDeviceName">D0280C 四色墨水屏样机 (UID: 1E:57:06:1E)</span>
           </div>
           <div class="telemetry-row">
             <span class="telemetry-label">2-bit 封包体量</span>
@@ -57,7 +57,7 @@ export class NFCModal {
           </div>
           <div class="telemetry-row">
             <span class="telemetry-label">传输协议</span>
-            <span class="telemetry-value" id="telemetryProtocol">ISO 14443-4 / NDEF Custom APDU</span>
+            <span class="telemetry-value" id="telemetryProtocol">ISO 7816 / ISO 14443-4 APDU (0x901E57061E00)</span>
           </div>
         </div>
 

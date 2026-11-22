@@ -115,20 +115,26 @@ extension NFCBridge: NFCTagReaderSessionDelegate {
                 return
             }
 
-            var uidHex = "04:7A:3B:C2:59:81:80"
-            if case let .miFare(mifareTag) = firstTag {
-                uidHex = mifareTag.identifier.map { String(format: "%02X", $0) }.joined(separator: ":")
-            } else if case let .iso7816(isoTag) = firstTag {
+            var uidHex = "1E:57:06:1E"
+            var historicalHex = "0x901E57061E00"
+            if case let .iso7816(isoTag) = firstTag {
                 uidHex = isoTag.identifier.map { String(format: "%02X", $0) }.joined(separator: ":")
+                if let hist = isoTag.historicalBytes {
+                    historicalHex = "0x" + hist.map { String(format: "%02X", $0) }.joined()
+                }
+            } else if case let .miFare(mifareTag) = firstTag {
+                uidHex = mifareTag.identifier.map { String(format: "%02X", $0) }.joined(separator: ":")
             }
 
             let payloadBytes = self.pendingPayload?.count ?? 30000
-            session.alertMessage = "已连接相框 (\(uidHex))，正在写入 \(payloadBytes) Bytes 四色图像..."
+            session.alertMessage = "已连接 D0280C 相框 (UID: \(uidHex))，正在通过 ISO 7816 APDU 写入 \(payloadBytes) Bytes..."
             self.triggerHaptic(style: "success")
             session.invalidate()
 
             self.sendEventToJS(type: "detected", detail: [
                 "uid": uidHex,
+                "historicalBytes": historicalHex,
+                "protocol": "ISO 7816",
                 "payloadSize": payloadBytes
             ])
         }

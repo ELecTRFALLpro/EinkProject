@@ -42,6 +42,7 @@ func (s *DeviceService) InitDefaults() error {
 		Nickname string
 		Location string
 	}{
+		{UID: "1E:57:06:1E", Nickname: "D0280C 四色墨水屏样机", Location: "研发桌面"},
 		{UID: "04:7A:3B:C2:59:81:80", Nickname: "客厅胡桃木相框", Location: "客厅茶几"},
 		{UID: "04:8B:4C:D3:60:92:81", Nickname: "书房极简白相框", Location: "书房书架"},
 	}

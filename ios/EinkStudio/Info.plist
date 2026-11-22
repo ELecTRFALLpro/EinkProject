@@ -23,7 +23,15 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NFCReaderUsageDescription</key>
-	<string>用于贴近四色墨水屏相框背部 NFC 感应区，无线写入 30KB 胶片图像数据</string>
+	<string>用于贴近四色墨水屏相框背部 NFC 感应区，通过 ISO 7816 APDU 无线写入四色胶片图像数据</string>
+	<key>com.apple.developer.nfc.readersession.iso7816.select-identifiers</key>
+	<array>
+		<string>D2760000850101</string>
+		<string>D2760000850100</string>
+		<string>A000000003000000</string>
+		<string>F0010203040506</string>
+		<string>315041592E5359532E4444463031</string>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>用于拍摄照片并制作四色墨水屏胶片作品</string>
 	<key>NSPhotoLibraryUsageDescription</key>
