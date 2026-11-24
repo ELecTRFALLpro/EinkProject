@@ -45,9 +45,28 @@
     background: radial-gradient(circle at 50% 25%, #262320 0%, #0d0c0b 100%);
   }
   .camera-shell {
-    height: min(94dvh, 840px);
-    border-radius: 42px;
-    border: 4px solid rgba(255, 255, 255, 0.09);
+    --sat: 48px;
+    --sab: 16px;
+    height: min(94dvh, 852px);
+    border-radius: 48px;
+    border: 4px solid rgba(255, 255, 255, 0.11);
+  }
+  /* Desktop Mockup: Render iPhone Dynamic Island Pill so layout matches real iPhone 1:1 */
+  .camera-shell::after {
+    content: '';
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 122px;
+    height: 34px;
+    background: #080808;
+    border-radius: 999px;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 2px 6px rgba(0, 0, 0, 0.35);
+    z-index: 150;
+    pointer-events: none;
   }
 }
 
@@ -56,27 +75,27 @@
   outline-offset: 2px;
 }
 
-/* Floating Toast Notification */
+/* Floating Toast Notification (Dynamic Island Capsule Style) */
 .ios-toast {
   position: absolute;
-  top: calc(var(--sat) + 14px);
+  top: calc(var(--sat) + 6px);
   left: 50%;
-  transform: translate(-50%, -24px) scale(0.92);
-  background: rgba(24, 22, 20, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  transform: translate(-50%, -28px) scale(0.88);
+  background: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   color: #FFFFFF;
-  padding: 8px 16px;
+  padding: 9px 18px;
   border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 700;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   z-index: 200;
   pointer-events: none;
   opacity: 0;
   white-space: nowrap;
-  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.2s ease;
 }
 
 .ios-toast.visible {
@@ -84,24 +103,24 @@
   transform: translate(-50%, 0) scale(1);
 }
 
-/* 2. Top Pinned Polaroid Rainbow / Brand Stripe + Camera Identity */
+/* 2. Top Pinned Polaroid Rainbow / Brand Stripe + Camera Identity (Dynamic Island Adapted) */
 .cam-header-plate {
   position: relative;
   z-index: 5;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: calc(var(--sat) + 14px) 18px 4px 18px;
-  gap: 10px;
+  padding: calc(var(--sat) + 4px) 16px 2px 16px;
+  gap: 7px;
   flex-shrink: 0;
 }
 
-/* Polaroid-style recessed top color stripe */
+/* Polaroid-style recessed top color stripe — 120px width mirrors Dynamic Island (126px) above it */
 .cam-top-stripe {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  width: 92px;
-  height: 7px;
+  width: 120px;
+  height: 5px;
   border-radius: 999px;
   overflow: hidden;
   box-shadow:
@@ -114,19 +133,19 @@
   transition: background-color 0.3s ease;
 }
 
-/* Tactile Camera Model & Real Camera Image Selector Pill */
+/* Tactile Camera Model & Real Camera Image Selector Pill (Stadium Capsule matching Dynamic Island curvature) */
 .cam-selector-pill {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   background: var(--cam-well-bg);
   border: 1px solid var(--cam-body-border);
-  border-radius: 20px;
-  padding: 5px 14px 5px 7px;
+  border-radius: var(--radius-pill);
+  padding: 4px 16px 4px 6px;
   cursor: pointer;
   color: var(--cam-text-main);
   box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.08),
+    inset 0 1px 2px rgba(0, 0, 0, 0.09),
     0 1px 0 rgba(255, 255, 255, 0.55);
   transition: transform 0.14s ease, background-color 0.2s ease, border-color 0.2s ease;
   max-width: 100%;
@@ -137,16 +156,16 @@
 }
 
 .cam-mini-pedestal {
-  width: 54px;
-  height: 44px;
-  border-radius: 13px;
+  width: 46px;
+  height: 38px;
+  border-radius: var(--radius-pill);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(238, 232, 222, 0.78) 100%);
   border: 1px solid rgba(0, 0, 0, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  padding: 3px 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
   flex-shrink: 0;
   overflow: hidden;
 }

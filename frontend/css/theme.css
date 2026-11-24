@@ -61,7 +61,7 @@
   --color-eink-yellow: #F4C430;
   --color-eink-red: #D8262C;
 
-  /* iOS Safe Areas */
+  /* iOS Safe Areas (with Dynamic Island fallback on mobile viewports) */
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
@@ -76,6 +76,14 @@
   /* Font Families */
   --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif;
   --font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, monospace;
+}
+
+@media (max-width: 480px) {
+  :root {
+    /* Guarantee clearance for iPhone Dynamic Island (54px-59px) & Home Indicator */
+    --sat: max(env(safe-area-inset-top, 0px), 54px);
+    --sab: max(env(safe-area-inset-bottom, 0px), 20px);
+  }
 }
 
 /* Dark-body camera override (e.g., Ilford HP5 Stealth Monochrome) */

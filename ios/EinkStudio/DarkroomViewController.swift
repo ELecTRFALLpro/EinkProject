@@ -18,6 +18,21 @@ final class DarkroomViewController: UIViewController, WKUIDelegate, WKNavigation
         loadStudioApp()
     }
 
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        syncSafeAreaInsetsToWebView()
+    }
+
+    private func syncSafeAreaInsetsToWebView() {
+        let top = max(view.safeAreaInsets.top, 54.0)
+        let bottom = max(view.safeAreaInsets.bottom, 20.0)
+        let js = """
+        document.documentElement.style.setProperty('--sat', '\(top)px');
+        document.documentElement.style.setProperty('--sab', '\(bottom)px');
+        """
+        webView?.evaluateJavaScript(js, completionHandler: nil)
+    }
+
     private func setupWebView() {
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(schemeHandler, forURLScheme: "eink")
@@ -55,6 +70,10 @@ final class DarkroomViewController: UIViewController, WKUIDelegate, WKNavigation
         if let url = URL(string: "eink://app/index.html") {
             webView.load(URLRequest(url: url))
         }
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        syncSafeAreaInsetsToWebView()
     }
 
     // MARK: - WKUIDelegate (Native iOS Alerts & Prompts for Artwork Renaming)
