@@ -78,21 +78,36 @@ export function logout() {
   setCurrentUser(null);
 }
 
+function isStaticOnlyHost() {
+  const custom = localStorage.getItem(CUSTOM_API_KEY);
+  if (custom && custom.trim()) return false;
+  return window.location.hostname.endsWith('.github.io') ||
+         window.location.hostname.endsWith('.pages.dev') ||
+         window.location.hostname.endsWith('.netlify.app') ||
+         window.location.hostname.endsWith('.vercel.app');
+}
+
 // 1. Auth & Profile Endpoints
 export async function sendSMS(phone) {
+  if (isStaticOnlyHost()) {
+    return { sent: true, tip: 'GitHub Pages 静态演示模式：默认验证码 888888' };
+  }
   try {
     const res = await fetch(`${API_BASE}/auth/sms/send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone })
     });
+    if (res.status === 404 || res.status === 405) {
+      return { sent: true, tip: '静态托管模式：默认验证码 888888' };
+    }
     const data = await res.json();
     if (data.code !== 0) {
       throw new Error(data.message || '发送验证码失败');
     }
     return data.data;
   } catch (err) {
-    if (err.message && !err.message.includes('Failed to fetch')) {
+    if (err.message && !err.message.includes('Failed to fetch') && !err.message.includes('JSON')) {
       throw err;
     }
     // Offline fallback for dev demo
@@ -101,25 +116,7 @@ export async function sendSMS(phone) {
 }
 
 export async function loginBySMS(phone, code) {
-  try {
-    const res = await fetch(`${API_BASE}/auth/sms/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, code })
-    });
-    const data = await res.json();
-    if (data.code !== 0) {
-      throw new Error(data.message || '登录失败');
-    }
-    const { token, user } = data.data;
-    setAuthToken(token);
-    setCurrentUser(user);
-    return { token, user };
-  } catch (err) {
-    if (err.message && !err.message.includes('Failed to fetch')) {
-      throw err;
-    }
-    // Offline fallback login when backend isn't running
+  const fallbackLogin = () => {
     if (code !== '888888') {
       throw new Error('验证码错误（测试环境请输入 888888）');
     }
@@ -133,6 +130,34 @@ export async function loginBySMS(phone, code) {
     setAuthToken(mockToken);
     setCurrentUser(mockUser);
     return { token: mockToken, user: mockUser };
+  };
+
+  if (isStaticOnlyHost()) {
+    return fallbackLogin();
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/sms/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, code })
+    });
+    if (res.status === 404 || res.status === 405) {
+      return fallbackLogin();
+    }
+    const data = await res.json();
+    if (data.code !== 0) {
+      throw new Error(data.message || '登录失败');
+    }
+    const { token, user } = data.data;
+    setAuthToken(token);
+    setCurrentUser(user);
+    return { token, user };
+  } catch (err) {
+    if (err.message && !err.message.includes('Failed to fetch') && !err.message.includes('JSON')) {
+      throw err;
+    }
+    return fallbackLogin();
   }
 }
 
@@ -372,6 +397,9 @@ export async function unbindDevice(deviceId) {
 
 // 3. Photo Upload Endpoint
 export async function uploadImageFile(file) {
+  if (isStaticOnlyHost()) {
+    return null;
+  }
   const formData = new FormData();
   formData.append('file', file);
 
@@ -568,16 +596,18 @@ function deleteOfflineArtwork(id) {
 
 // 5. Config & Presets
 export async function fetchFilters() {
-  try {
-    const res = await fetch(`${API_BASE}/filters`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.code === 0 && data.data && data.data.filters) {
-        return data.data.filters;
+  if (!isStaticOnlyHost()) {
+    try {
+      const res = await fetch(`${API_BASE}/filters`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.code === 0 && data.data && data.data.filters) {
+          return data.data.filters;
+        }
       }
+    } catch (e) {
+      console.warn('Backend /v1/filters unreachable, falling back to local manifest:', e.message);
     }
-  } catch (e) {
-    console.warn('Backend /v1/filters unreachable, falling back to local manifest:', e.message);
   }
 
   const fallbackRes = await fetch('presets/manifest.json');
