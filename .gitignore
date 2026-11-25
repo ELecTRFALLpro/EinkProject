@@ -31,3 +31,8 @@ server/uploads/*
 !server/uploads/.gitkeep
 *.db
 *.db-journal
+
+# Xcode local user state
+xcuserdata/
+*.xcuserstate
+DerivedData/
